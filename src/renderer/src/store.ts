@@ -66,6 +66,7 @@ interface State {
   queue: Track[]
   update: UpdateState
   contextMenu: ContextMenuState | null
+  windowFocused: boolean
 
   unread: Record<string, number> // channelId -> count
   collapsed: Record<string, boolean>
@@ -128,6 +129,7 @@ export const useStore = create<State>((set, get) => ({
   queue: [],
   update: { available: false, downloaded: false, version: '' },
   contextMenu: null,
+  windowFocused: true,
   unread: {},
   collapsed: {},
   replyTarget: null,
@@ -137,6 +139,9 @@ export const useStore = create<State>((set, get) => ({
   init: async () => {
     if (initialized) return // guard against React StrictMode double-invoke
     initialized = true
+    window.addEventListener('focus', () => set({ windowFocused: true }))
+    window.addEventListener('blur', () => set({ windowFocused: false }))
+    set({ windowFocused: document.hasFocus() })
     const settings = await api.getSettings()
     const { palette, appearance } = resolvePalette(settings)
     applyPalette(palette, appearance)
@@ -313,12 +318,14 @@ export const useStore = create<State>((set, get) => ({
 
 function maybeNotify(m: MessageData, s: State): void {
   if (m.isSelf) return
-  // Read the mode live so a just-changed setting always applies.
-  const mode = useStore.getState().settings.notificationMode
+  // Read live state so a just-changed setting always applies.
+  const st = useStore.getState()
+  const mode = st.settings.notificationMode
   if (mode === 'none') return
-  if (mode === 'pings' && !m.mentionsMe) return
-  // Never notify for the channel you're actively reading.
-  if (m.channelId === s.activeChannelId && document.hasFocus()) return
+  // "Only @mentions & DMs" uses directPing (excludes @everyone/@here spam).
+  if (mode === 'pings' && !m.directPing) return
+  // Never notify for the channel you're actively reading while focused.
+  if (m.channelId === s.activeChannelId && st.windowFocused) return
   try {
     if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
       const n = new Notification(m.author, {

@@ -74,6 +74,8 @@ export interface MessageData {
   images: string[]
   files: AttachmentFile[]
   mentionsMe: boolean
+  /** A real ping for notifications: DM, direct @mention or role mention — excludes @everyone/@here. */
+  directPing: boolean
   reactions: Reaction[]
 }
 

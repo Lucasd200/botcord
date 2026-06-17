@@ -154,6 +154,20 @@ export class BotManager extends EventEmitter {
       this.emit('messageDelete', { channelId: message.channelId, id: message.id })
     })
 
+    // Re-emit the message when reactions change so they update live under it.
+    const onReaction = async (reaction: any): Promise<void> => {
+      try {
+        if (reaction.partial) reaction = await reaction.fetch()
+        let msg = reaction.message
+        if (msg.partial) msg = await msg.fetch()
+        if (msg.channelId === this.activeChannelId) this.emit('messageUpdate', this.messageToDict(msg))
+      } catch {
+        /* ignore */
+      }
+    }
+    client.on('messageReactionAdd', onReaction)
+    client.on('messageReactionRemove', onReaction)
+
     client.on('typingStart', (typing) => {
       if (typing.channel.id === this.activeChannelId && typing.user.id !== client.user?.id) {
         this.emit('typing', { channelId: typing.channel.id, name: typing.user.username })
@@ -305,17 +319,24 @@ export class BotManager extends EventEmitter {
 
     const me = this.client?.user
     let mentionsMe = false
+    let directPing = false
     if (me) {
       if (message.channel.type === ChannelType.DM) {
         mentionsMe = true
+        directPing = true
       } else {
-        // discord.js auto-adds the replied-to user to mentions.users even when
-        // the reply ping is off — ignoreRepliedUser keeps that from counting as
-        // a real @mention (the main cause of over-notifying). Passing our member
-        // (when cached) lets has() also catch role mentions of the bot's roles.
+        // ignoreRepliedUser stops discord.js's auto replied-user mention from
+        // counting as a ping. mentionsMe (highlight) includes @everyone/@here;
+        // directPing (notifications) excludes them so busy servers spamming
+        // @everyone don't notify on "Only @mentions & DMs".
         const meRef = message.guild?.members.me ?? me.id
         mentionsMe = message.mentions.has(meRef, {
           ignoreEveryone: false,
+          ignoreRoles: false,
+          ignoreRepliedUser: true
+        })
+        directPing = message.mentions.has(meRef, {
+          ignoreEveryone: true,
           ignoreRoles: false,
           ignoreRepliedUser: true
         })
@@ -344,6 +365,7 @@ export class BotManager extends EventEmitter {
       images,
       files,
       mentionsMe,
+      directPing,
       reactions: message.reactions.cache.map((r) => ({
         emoji: r.emoji.name || '❓',
         id: r.emoji.id,
