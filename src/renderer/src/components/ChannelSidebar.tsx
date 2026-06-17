@@ -39,7 +39,7 @@ export default function ChannelSidebar(): JSX.Element {
 
   const channelRow = (ch: ChannelInfo): JSX.Element => {
     const isVoice = ch.type === 'voice' || ch.type === 'stage'
-    const hasUnread = (unread[ch.id] || 0) > 0
+    const hasUnread = !muted && (unread[ch.id] || 0) > 0
     const mentions = muted ? 0 : unreadMentions[ch.id] || 0
     const connectedHere = isVoice && joinVoiceChannel.connected && joinVoiceChannel.channelName === ch.name
     return (

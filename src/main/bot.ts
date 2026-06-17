@@ -335,11 +335,10 @@ export class BotManager extends EventEmitter {
           ignoreRoles: false,
           ignoreRepliedUser: true
         })
-        directPing = message.mentions.has(meRef, {
-          ignoreEveryone: true,
-          ignoreRoles: false,
-          ignoreRepliedUser: true
-        })
+        // Strict: only a literal @mention of the bot in the message text counts
+        // as a ping for the badge — not reply auto-mentions, role pings or
+        // @everyone (which for a bot are mostly command spam). DMs set it above.
+        directPing = new RegExp(`<@!?${me.id}>`).test(message.content || '')
       }
     }
 

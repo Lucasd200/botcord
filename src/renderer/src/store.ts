@@ -316,6 +316,9 @@ export const useStore = create<State>((set, get) => ({
   applySettings: async (partial) => {
     const merged = await api.setSettings(partial)
     set({ settings: merged })
+    // Switching notifications to None wipes every unread/mention badge so the
+    // channel list goes completely quiet — "off" means nothing.
+    if (partial.notificationMode === 'none') set({ unread: {}, unreadMentions: {} })
     if ('theme' in partial || 'colorTheme' in partial || 'accent' in partial) {
       const { palette, appearance } = resolvePalette(merged)
       applyPalette(palette, appearance)
