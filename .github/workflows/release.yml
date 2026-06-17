@@ -17,7 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, macos-latest]
+        # macos-13 (Intel) avoids the dmg-builder / mac_alias background bug on
+        # macos-14/15 runners; it still cross-builds the arm64 dmg.
+        os: [windows-latest, macos-13]
     runs-on: ${{ matrix.os }}
     steps:
       - name: Checkout
@@ -42,7 +44,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish macOS installer
-        if: matrix.os == 'macos-latest'
+        if: matrix.os == 'macos-13'
         run: npx electron-builder --mac --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
