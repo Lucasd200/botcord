@@ -4,6 +4,9 @@ copyright: Copyright © 2026 Lucas
 directories:
   output: release
   buildResources: build
+# Ad-hoc sign the macOS .app after packing so downloaded builds open via
+# right-click > Open instead of failing with a "damaged" Gatekeeper error.
+afterPack: scripts/after-pack.js
 files:
   - out/**/*
   - package.json
