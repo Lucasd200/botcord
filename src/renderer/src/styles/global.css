@@ -2297,3 +2297,88 @@ a:hover {
   flex: 1;
   text-align: center;
 }
+
+/* Mention autocomplete -------------------------------------- */
+.mention-popup {
+  background: var(--bg-float);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  overflow: hidden;
+  box-shadow: 0 6px 20px var(--shadow);
+  max-height: 240px;
+  overflow-y: auto;
+}
+.mention-head {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  padding: 10px 12px 6px;
+}
+.mention-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 12px;
+  text-align: left;
+  color: var(--text-muted);
+}
+.mention-item.active {
+  background: var(--accent);
+  color: #fff;
+}
+.mention-item.active .mention-name,
+.mention-item.active .mention-kind {
+  color: #fff !important;
+}
+.mention-role-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin: 0 3px;
+}
+.mention-name {
+  flex: 1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mention-kind {
+  font-size: 11px;
+  color: var(--text-faint);
+  text-transform: uppercase;
+}
+
+/* Voice members under a channel ----------------------------- */
+.channel-wrap {
+  display: flex;
+  flex-direction: column;
+}
+.voice-count {
+  font-size: 11px;
+  color: var(--text-faint);
+  margin-left: auto;
+}
+.voice-member {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 8px 4px 30px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  font-size: 14px;
+  text-align: left;
+}
+.voice-member:hover {
+  background: var(--hover);
+  color: var(--text-muted);
+}
+.voice-member span {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

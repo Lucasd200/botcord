@@ -29,6 +29,7 @@ export default function ChannelSidebar(): JSX.Element {
   const user = useStore((s) => s.user)
   const setShowSettings = useStore((s) => s.setShowSettings)
   const setShowMusic = useStore((s) => s.setShowMusic)
+  const openProfile = useStore((s) => s.openProfile)
   const joinVoiceChannel = useStore((s) => s.voice)
   const guild = useMemo(() => guilds.find((g) => g.id === activeGuildId) || null, [guilds, activeGuildId])
 
@@ -42,25 +43,35 @@ export default function ChannelSidebar(): JSX.Element {
     const hasUnread = !muted && (unread[ch.id] || 0) > 0
     const mentions = muted ? 0 : unreadMentions[ch.id] || 0
     const connectedHere = isVoice && joinVoiceChannel.connected && joinVoiceChannel.channelName === ch.name
+    const vMembers = ch.voiceMembers || []
     return (
-      <button
-        key={ch.id}
-        className={
-          'channel-row ' +
-          (activeChannelId === ch.id ? 'active ' : '') +
-          (hasUnread ? 'unread ' : '') +
-          (isVoice ? 'voice ' : '') +
-          (connectedHere ? 'connected' : '')
-        }
-        onClick={() => (isVoice ? joinVoice(ch.id) : openChannel(ch.id))}
-        title={isVoice ? 'Click to join voice' : ch.topic || ch.name}
-      >
-        {hasUnread && mentions === 0 && <span className="unread-dot" />}
-        <ChannelIcon type={ch.type} />
-        <span className="channel-name">{ch.name}</span>
-        {connectedHere && <span className="voice-live">●</span>}
-        {mentions > 0 && <span className="channel-badge">{mentions > 99 ? '99+' : mentions}</span>}
-      </button>
+      <div key={ch.id} className="channel-wrap">
+        <button
+          className={
+            'channel-row ' +
+            (activeChannelId === ch.id ? 'active ' : '') +
+            (hasUnread ? 'unread ' : '') +
+            (isVoice ? 'voice ' : '') +
+            (connectedHere ? 'connected' : '')
+          }
+          onClick={() => (isVoice ? joinVoice(ch.id) : openChannel(ch.id))}
+          title={isVoice ? 'Click to join voice' : ch.topic || ch.name}
+        >
+          {hasUnread && mentions === 0 && <span className="unread-dot" />}
+          <ChannelIcon type={ch.type} />
+          <span className="channel-name">{ch.name}</span>
+          {connectedHere && <span className="voice-live">●</span>}
+          {isVoice && vMembers.length > 0 && <span className="voice-count">{vMembers.length}</span>}
+          {mentions > 0 && <span className="channel-badge">{mentions > 99 ? '99+' : mentions}</span>}
+        </button>
+        {isVoice &&
+          vMembers.map((vm) => (
+            <button key={vm.id} className="voice-member" onClick={() => openProfile(vm.id)} title={vm.name}>
+              <Avatar name={vm.name} src={vm.avatar} size={20} status="online" />
+              <span>{vm.name}</span>
+            </button>
+          ))}
+      </div>
     )
   }
 

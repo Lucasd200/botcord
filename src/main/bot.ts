@@ -135,6 +135,10 @@ export class BotManager extends EventEmitter {
 
     client.on('guildCreate', () => this.emit('guilds', this.buildGuilds()))
     client.on('guildDelete', () => this.emit('guilds', this.buildGuilds()))
+    client.on('voiceStateUpdate', () => this.emit('guilds', this.buildGuilds()))
+    client.on('roleCreate', () => this.emit('guilds', this.buildGuilds()))
+    client.on('roleUpdate', () => this.emit('guilds', this.buildGuilds()))
+    client.on('roleDelete', () => this.emit('guilds', this.buildGuilds()))
     client.on('guildUpdate', () => this.emit('guilds', this.buildGuilds()))
     client.on('channelCreate', () => this.emit('guilds', this.buildGuilds()))
     client.on('channelDelete', () => this.emit('guilds', this.buildGuilds()))
@@ -256,8 +260,23 @@ export class BotManager extends EventEmitter {
         }
         const parentName = tch.parent ? tch.parent.name : null
         const cat = ensureCat(tch.parentId ?? null, parentName)
-        cat.channels.push({ id: ch.id, name: ch.name, type: kind, nsfw: !!tch.nsfw, topic: tch.topic ?? null })
-        if (kind === 'voice' || kind === 'stage') voiceFlat.push({ id: ch.id, name: ch.name })
+        const isVoiceKind = kind === 'voice' || kind === 'stage'
+        const voiceMembers = isVoiceKind
+          ? [...(tch.members?.values() ?? [])].map((m: any) => ({
+              id: m.id,
+              name: m.displayName,
+              avatar: m.displayAvatarURL({ size: 32 })
+            }))
+          : undefined
+        cat.channels.push({
+          id: ch.id,
+          name: ch.name,
+          type: kind,
+          nsfw: !!tch.nsfw,
+          topic: tch.topic ?? null,
+          voiceMembers
+        })
+        if (isVoiceKind) voiceFlat.push({ id: ch.id, name: ch.name })
       }
 
       const categories = order
@@ -273,6 +292,11 @@ export class BotManager extends EventEmitter {
         }
       }
 
+      const roles = [...guild.roles.cache.values()]
+        .filter((r) => r.name !== '@everyone')
+        .sort((a, b) => b.position - a.position)
+        .map((r) => ({ id: r.id, name: r.name, color: r.hexColor !== '#000000' ? r.hexColor : null }))
+
       data.push({
         id: guild.id,
         name: guild.name,
@@ -280,6 +304,7 @@ export class BotManager extends EventEmitter {
         acronym: acronym(guild.name),
         categories,
         voice: voiceFlat,
+        roles,
         memberCount: guild.memberCount,
         onlineCount: online
       })

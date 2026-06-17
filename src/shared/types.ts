@@ -20,12 +20,25 @@ export interface Settings {
   spellcheck: boolean
 }
 
+export interface VoiceMember {
+  id: string
+  name: string
+  avatar: string | null
+}
+
 export interface ChannelInfo {
   id: string
   name: string
   type: 'text' | 'voice' | 'announcement' | 'forum' | 'stage'
   nsfw?: boolean
   topic?: string | null
+  voiceMembers?: VoiceMember[]
+}
+
+export interface RoleInfo {
+  id: string
+  name: string
+  color: string | null
 }
 
 export interface CategoryInfo {
@@ -41,6 +54,7 @@ export interface GuildInfo {
   acronym: string
   categories: CategoryInfo[]
   voice: { id: string; name: string }[]
+  roles: RoleInfo[]
   memberCount: number
   onlineCount: number
 }
