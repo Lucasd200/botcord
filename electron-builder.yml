@@ -1,0 +1,57 @@
+appId: dev.botcord.app
+productName: Botcord
+copyright: Copyright © 2026 Lucas
+directories:
+  output: release
+  buildResources: build
+files:
+  - out/**/*
+  - package.json
+  - "!**/*.map"
+asarUnpack:
+  - "**/*.node"
+  - "**/ffmpeg-static/**"
+publish:
+  provider: github
+  owner: Lucasd200
+  repo: botcord
+  releaseType: release
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: build/icon.ico
+  artifactName: ${productName}-Setup-${version}.${ext}
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Botcord
+  installerIcon: build/icon.ico
+  uninstallerIcon: build/icon.ico
+mac:
+  category: public.app-category.social-networking
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+  icon: build/icon.png
+  artifactName: ${productName}-${version}-${arch}.${ext}
+dmg:
+  title: Botcord ${version}
+linux:
+  target:
+    - AppImage
+    - deb
+  category: Network
+  icon: build/icon.png
+  maintainer: Lucas
+  artifactName: ${productName}-${version}-${arch}.${ext}
