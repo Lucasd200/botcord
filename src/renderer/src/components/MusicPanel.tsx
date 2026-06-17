@@ -89,7 +89,7 @@ export default function MusicPanel(): JSX.Element {
 
             <div className="music-add">
               <input
-                placeholder="Song name or YouTube URL"
+                placeholder="Song, or YouTube / Spotify / SoundCloud link"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && add()}

@@ -126,6 +126,82 @@ export class MusicManager extends EventEmitter {
     })
   }
 
+  private scInit = false
+
+  /** SoundCloud needs a free client id once per session. */
+  private async ensureSoundcloud(play: any): Promise<boolean> {
+    if (this.scInit) return true
+    try {
+      const id = await play.getFreeClientID()
+      play.setToken({ soundcloud: { client_id: id } })
+      this.scInit = true
+      return true
+    } catch {
+      return false
+    }
+  }
+
+  /** Spotify has no public stream — scrape the title and find it on YouTube. */
+  private async spotifyToQuery(url: string): Promise<string | null> {
+    const decode = (s: string): string =>
+      s
+        .replace(/&amp;/g, '&')
+        .replace(/&#x27;|&#39;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+    try {
+      const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' } })
+      const html = await res.text()
+      const title = html.match(/<meta property="og:title" content="([^"]+)"/i)?.[1]
+      const desc = html.match(/<meta property="og:description" content="([^"]+)"/i)?.[1]
+      if (!title) return null
+      let artist = ''
+      if (desc) artist = decode(desc.split('·')[0]?.trim() || '')
+      return decode(title) + (artist && !title.includes(artist) ? ' ' + artist : '')
+    } catch {
+      return null
+    }
+  }
+
+  private async resolveTrack(query: string, requester: string): Promise<QueueItem | null> {
+    const play: any = await import('play-dl')
+    const q = query.trim()
+
+    if (/open\.spotify\.com/i.test(q)) {
+      const term = (await this.spotifyToQuery(q)) || q
+      const results = await play.search(term, { limit: 1, source: { youtube: 'video' } })
+      if (!results.length) return null
+      const r = results[0]
+      return { title: r.title || term, url: r.url, duration: r.durationInSec || null, thumbnail: r.thumbnails?.[0]?.url || null, requester, local: false }
+    }
+
+    if (/soundcloud\.com/i.test(q)) {
+      if (!(await this.ensureSoundcloud(play))) {
+        this.emit('log', 'SoundCloud is unavailable right now.')
+        return null
+      }
+      const info = await play.soundcloud(q)
+      if (info?.type && info.type !== 'track') {
+        this.emit('log', 'Only SoundCloud track links are supported.')
+        return null
+      }
+      const durSec = info.durationInSec ?? (info.durationInMs ? Math.round(info.durationInMs / 1000) : null)
+      return { title: info.name || q, url: q, duration: durSec, thumbnail: info.thumbnail || null, requester, local: false }
+    }
+
+    if (play.yt_validate(q) === 'video') {
+      const info = await play.video_basic_info(q)
+      const d = info.video_details
+      return { title: d.title || q, url: q, duration: d.durationInSec || null, thumbnail: d.thumbnails?.[0]?.url || null, requester, local: false }
+    }
+
+    const results = await play.search(q, { limit: 1, source: { youtube: 'video' } })
+    if (!results.length) return null
+    const r = results[0]
+    return { title: r.title || q, url: r.url, duration: r.durationInSec || null, thumbnail: r.thumbnails?.[0]?.url || null, requester, local: false }
+  }
+
   async enqueue(query: string, requester = 'You'): Promise<void> {
     if (!this.connection) {
       this.emit('log', 'Join a voice channel first, then add a track.')
@@ -133,38 +209,13 @@ export class MusicManager extends EventEmitter {
     }
     let item: QueueItem | null = null
     try {
-      const play = await import('play-dl')
-      let url = query.trim()
-      const isYt = play.yt_validate(url) === 'video'
-      if (!isYt) {
-        const results = await play.search(url, { limit: 1, source: { youtube: 'video' } })
-        if (!results.length) {
-          this.emit('log', 'Nothing found for: ' + query)
-          return
-        }
-        url = results[0].url
-        item = {
-          title: results[0].title || query,
-          url,
-          duration: results[0].durationInSec || null,
-          thumbnail: results[0].thumbnails?.[0]?.url || null,
-          requester,
-          local: false
-        }
-      } else {
-        const info = await play.video_basic_info(url)
-        const d = info.video_details
-        item = {
-          title: d.title || query,
-          url,
-          duration: d.durationInSec || null,
-          thumbnail: d.thumbnails?.[0]?.url || null,
-          requester,
-          local: false
-        }
-      }
+      item = await this.resolveTrack(query, requester)
     } catch (e) {
       this.emit('log', 'Lookup error: ' + (e as Error).message)
+      return
+    }
+    if (!item) {
+      this.emit('log', 'Nothing found for: ' + query)
       return
     }
     this.queue.push(item)
