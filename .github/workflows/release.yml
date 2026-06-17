@@ -32,6 +32,21 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # @discordjs/voice pulls in @snazzah/davey, a NAPI module whose native
+      # binding ships as a per-platform optional dependency. `npm ci` only
+      # installs the binding matching the *runner's* arch, but `electron-builder
+      # --mac` builds BOTH the arm64 and x64 zips. Since macos-latest is an
+      # Apple Silicon (arm64) runner, the x64 zip would otherwise be packaged
+      # with the arm64 binding and crash on launch with "Cannot find native
+      # binding". Force-install the x64 binding (matching the resolved davey
+      # version) so the cross-arch macOS build has the binding it needs.
+      - name: Add cross-arch macOS native binding
+        if: matrix.os == 'macos-latest'
+        run: |
+          DAVEY_VER="$(node -p "require('@snazzah/davey/package.json').version")"
+          echo "Installing @snazzah/davey-darwin-x64@${DAVEY_VER} for the x64 build"
+          npm install --no-save --os=darwin --cpu=x64 "@snazzah/davey-darwin-x64@${DAVEY_VER}"
+
       - name: Build bundles
         run: npm run build
 
