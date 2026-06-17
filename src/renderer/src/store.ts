@@ -11,7 +11,8 @@ import type {
   HistoryPayload,
   Track,
   NowPlaying,
-  VoiceStatus
+  VoiceStatus,
+  ProfileData
 } from '@shared/types'
 
 export interface ContextMenuState {
@@ -68,10 +69,15 @@ interface State {
   contextMenu: ContextMenuState | null
   windowFocused: boolean
 
-  unread: Record<string, number> // channelId -> count
+  unread: Record<string, number> // channelId -> any-message count (for bold)
+  unreadMentions: Record<string, number> // channelId -> ping count (red badge)
   collapsed: Record<string, boolean>
   replyTarget: MessageData | null
   editingId: string | null
+  profile: ProfileData | null
+  profileLoading: boolean
+  mentionRequest: number
+  mentionTargetId: string
   toasts: Toast[]
 
   // actions
@@ -91,6 +97,9 @@ interface State {
   setEditing: (id: string | null) => void
   openMenu: (x: number, y: number, messageId: string, mode: ContextMenuState['mode']) => void
   closeMenu: () => void
+  openProfile: (userId: string) => Promise<void>
+  closeProfile: () => void
+  mentionUser: (userId: string) => void
   installUpdate: () => void
   pushToast: (text: string, kind?: Toast['kind']) => void
   dismissToast: (id: number) => void
@@ -131,9 +140,14 @@ export const useStore = create<State>((set, get) => ({
   contextMenu: null,
   windowFocused: true,
   unread: {},
+  unreadMentions: {},
   collapsed: {},
   replyTarget: null,
   editingId: null,
+  profile: null,
+  profileLoading: false,
+  mentionRequest: 0,
+  mentionTargetId: '',
   toasts: [],
 
   init: async () => {
@@ -164,7 +178,8 @@ export const useStore = create<State>((set, get) => ({
         topic: h.topic,
         isDM: h.isDM,
         activeChannelId: h.channelId,
-        unread: { ...s.unread, [h.channelId]: 0 }
+        unread: { ...s.unread, [h.channelId]: 0 },
+        unreadMentions: { ...s.unreadMentions, [h.channelId]: 0 }
       }))
       requestAnimationFrame(() => {
         const el = document.getElementById('message-scroll')
@@ -187,7 +202,16 @@ export const useStore = create<State>((set, get) => ({
             })
         }
       } else if (!m.isSelf) {
-        set({ unread: { ...s.unread, [m.channelId]: (s.unread[m.channelId] || 0) + 1 } })
+        // General unread (bold) for any message; red ping badge only for real
+        // mentions, and never while notifications are off.
+        const muted = s.settings.notificationMode === 'none'
+        set({
+          unread: { ...s.unread, [m.channelId]: (s.unread[m.channelId] || 0) + 1 },
+          unreadMentions:
+            m.directPing && !muted
+              ? { ...s.unreadMentions, [m.channelId]: (s.unreadMentions[m.channelId] || 0) + 1 }
+              : s.unreadMentions
+        })
       }
       maybeNotify(m, s)
     })
@@ -306,6 +330,17 @@ export const useStore = create<State>((set, get) => ({
   setEditing: (id) => set({ editingId: id, replyTarget: null }),
   openMenu: (x, y, messageId, mode) => set({ contextMenu: { x, y, messageId, mode } }),
   closeMenu: () => set({ contextMenu: null }),
+  openProfile: async (userId) => {
+    set({ profileLoading: true, profile: null })
+    const p = await api.getProfile(userId)
+    if (p) set({ profile: p, profileLoading: false })
+    else {
+      set({ profileLoading: false })
+      get().pushToast('Could not load that profile.', 'error')
+    }
+  },
+  closeProfile: () => set({ profile: null, profileLoading: false }),
+  mentionUser: (userId) => set({ mentionRequest: Date.now(), mentionTargetId: userId, profile: null }),
   installUpdate: () => api.installUpdate(),
 
   pushToast: (text, kind = 'info') => {

@@ -34,19 +34,15 @@ nsis:
   uninstallerIcon: build/icon.ico
 mac:
   category: public.app-category.social-networking
+  # ZIP only: it's what electron-updater uses for mac auto-update and it avoids
+  # the flaky dmg-builder/hdiutil step that hangs/fails on GitHub macOS runners.
   target:
-    - target: dmg
-      arch:
-        - x64
-        - arm64
     - target: zip
       arch:
         - x64
         - arm64
   icon: build/icon.png
   artifactName: ${productName}-${version}-${arch}.${ext}
-dmg:
-  title: Botcord ${version}
 linux:
   target:
     - AppImage

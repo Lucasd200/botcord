@@ -5,7 +5,7 @@ import type { MemberData } from '@shared/types'
 
 export default function MemberList(): JSX.Element {
   const members = useStore((s) => s.members)
-  const openDM = useStore((s) => s.openDM)
+  const openProfile = useStore((s) => s.openProfile)
 
   const groups = useMemo(() => {
     const map = new Map<string, MemberData[]>()
@@ -29,7 +29,7 @@ export default function MemberList(): JSX.Element {
               {role} — {list.length}
             </div>
             {list.map((m) => (
-              <button key={m.id} className="member-row" onDoubleClick={() => openDM(m.id)} title="Double-click to DM">
+              <button key={m.id} className="member-row" onClick={() => openProfile(m.id)} title="View profile">
                 <Avatar name={m.name} src={m.avatar} size={32} status={m.status || 'online'} />
                 <div className="member-text">
                   <span className="member-name" style={m.roleColor ? { color: m.roleColor } : undefined}>

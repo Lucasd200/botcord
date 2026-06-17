@@ -27,6 +27,7 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
   const setReplyTarget = useStore((s) => s.setReplyTarget)
   const setEditing = useStore((s) => s.setEditing)
   const openMenu = useStore((s) => s.openMenu)
+  const openProfile = useStore((s) => s.openProfile)
   const pushToast = useStore((s) => s.pushToast)
 
   const copy = (): void => {
@@ -62,14 +63,20 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
           {grouped ? (
             <span className="gutter-time">{new Date(m.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
           ) : (
-            <Avatar name={m.author} src={m.avatarUrl} size={40} />
+            <button className="avatar-btn" onClick={() => openProfile(m.authorId)} title="View profile">
+              <Avatar name={m.author} src={m.avatarUrl} size={40} />
+            </button>
           )}
         </div>
 
         <div className="message-content">
           {!grouped && (
             <div className="message-head">
-              <span className="message-author" style={m.roleColor ? { color: m.roleColor } : undefined}>
+              <span
+                className="message-author clickable"
+                style={m.roleColor ? { color: m.roleColor } : undefined}
+                onClick={() => openProfile(m.authorId)}
+              >
                 {m.author}
               </span>
               {m.bot && <span className="bot-tag">{m.isSelf ? 'YOU' : 'APP'}</span>}

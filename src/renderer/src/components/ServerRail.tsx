@@ -23,14 +23,16 @@ export default function ServerRail(): JSX.Element {
   const selectGuild = useStore((s) => s.selectGuild)
   const settings = useStore((s) => s.settings)
   const applySettings = useStore((s) => s.applySettings)
-  const unread = useStore((s) => s.unread)
+  const unreadMentions = useStore((s) => s.unreadMentions)
+  const muted = useStore((s) => s.settings.notificationMode === 'none')
   const [dragId, setDragId] = useState<string | null>(null)
 
   const ordered = useMemo(() => orderedGuilds(guilds, settings.serverOrder || []), [guilds, settings.serverOrder])
 
   const guildUnread = (g: GuildInfo): number => {
+    if (muted) return 0
     let n = 0
-    for (const cat of g.categories) for (const ch of cat.channels) n += unread[ch.id] || 0
+    for (const cat of g.categories) for (const ch of cat.channels) n += unreadMentions[ch.id] || 0
     return n
   }
 

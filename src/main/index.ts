@@ -112,6 +112,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.typing, () => bot.typing())
   ipcMain.handle(IPC.setPresence, (_e, s: string, a: string) => bot.setPresence(s, a))
   ipcMain.handle(IPC.loadMembers, () => bot.refreshMembers())
+  ipcMain.handle(IPC.getProfile, (_e, id: string) => bot.getProfile(id))
 
   ipcMain.handle(IPC.getSettings, () => loadSettings())
   ipcMain.handle(IPC.setSettings, (_e, partial: Partial<Settings>) => {

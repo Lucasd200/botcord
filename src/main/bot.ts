@@ -587,6 +587,43 @@ export class BotManager extends EventEmitter {
     if (guild) this.emit('members', await this.loadMembers(guild), guild.name)
   }
 
+  async getProfile(userId: string): Promise<import('@shared/types').ProfileData | null> {
+    if (!this.client) return null
+    try {
+      const user =
+        this.client.users.cache.get(userId) || (await this.client.users.fetch(userId, { force: true }))
+      const ch = this.activeChannel() as any
+      const guild = ch?.guild as Guild | undefined
+      let member: GuildMember | null = null
+      if (guild) {
+        member =
+          guild.members.cache.get(userId) || (await guild.members.fetch(userId).catch(() => null))
+      }
+      const roles = member
+        ? [...member.roles.cache.values()]
+            .filter((r) => r.name !== '@everyone')
+            .sort((a, b) => b.position - a.position)
+            .map((r) => ({ name: r.name, color: r.hexColor !== '#000000' ? r.hexColor : null }))
+        : []
+      return {
+        id: user.id,
+        username: user.discriminator && user.discriminator !== '0' ? `${user.username}#${user.discriminator}` : user.username,
+        displayName: member?.displayName || (user as any).globalName || user.username,
+        avatar: user.displayAvatarURL({ size: 256 }),
+        banner: user.bannerURL ? user.bannerURL({ size: 600 }) ?? null : null,
+        bannerColor: (user as any).hexAccentColor ?? null,
+        bot: user.bot,
+        status: member?.presence?.status || '',
+        roles,
+        roleColor: member && member.displayHexColor !== '#000000' ? member.displayHexColor : null,
+        createdAt: user.createdTimestamp,
+        joinedAt: member?.joinedTimestamp ?? null
+      }
+    } catch {
+      return null
+    }
+  }
+
   // ---- voice + music (delegate to MusicManager) ----------------------------
   joinVoice(id: string): void {
     void this.music?.join(id)

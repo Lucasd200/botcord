@@ -115,6 +115,26 @@ export interface BotUser {
   guildCount: number
 }
 
+export interface ProfileRole {
+  name: string
+  color: string | null
+}
+
+export interface ProfileData {
+  id: string
+  username: string
+  displayName: string
+  avatar: string | null
+  banner: string | null
+  bannerColor: string | null
+  bot: boolean
+  status: string
+  roles: ProfileRole[]
+  roleColor: string | null
+  createdAt: number
+  joinedAt: number | null
+}
+
 export interface HistoryPayload {
   channelId: string
   messages: MessageData[]
@@ -176,6 +196,7 @@ export const IPC = {
   typing: 'bot:typing',
   setPresence: 'bot:setPresence',
   loadMembers: 'bot:loadMembers',
+  getProfile: 'bot:getProfile',
   pickFile: 'dialog:pickFile',
   pickAudioFile: 'dialog:pickAudioFile',
   // voice + music

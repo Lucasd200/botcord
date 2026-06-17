@@ -24,6 +24,8 @@ export default function ChannelSidebar(): JSX.Element {
   const collapsed = useStore((s) => s.collapsed)
   const toggleCollapsed = useStore((s) => s.toggleCollapsed)
   const unread = useStore((s) => s.unread)
+  const unreadMentions = useStore((s) => s.unreadMentions)
+  const muted = useStore((s) => s.settings.notificationMode === 'none')
   const user = useStore((s) => s.user)
   const setShowSettings = useStore((s) => s.setShowSettings)
   const setShowMusic = useStore((s) => s.setShowMusic)
@@ -37,7 +39,8 @@ export default function ChannelSidebar(): JSX.Element {
 
   const channelRow = (ch: ChannelInfo): JSX.Element => {
     const isVoice = ch.type === 'voice' || ch.type === 'stage'
-    const u = unread[ch.id] || 0
+    const hasUnread = (unread[ch.id] || 0) > 0
+    const mentions = muted ? 0 : unreadMentions[ch.id] || 0
     const connectedHere = isVoice && joinVoiceChannel.connected && joinVoiceChannel.channelName === ch.name
     return (
       <button
@@ -45,17 +48,18 @@ export default function ChannelSidebar(): JSX.Element {
         className={
           'channel-row ' +
           (activeChannelId === ch.id ? 'active ' : '') +
-          (u > 0 ? 'unread ' : '') +
+          (hasUnread ? 'unread ' : '') +
           (isVoice ? 'voice ' : '') +
           (connectedHere ? 'connected' : '')
         }
         onClick={() => (isVoice ? joinVoice(ch.id) : openChannel(ch.id))}
         title={isVoice ? 'Click to join voice' : ch.topic || ch.name}
       >
+        {hasUnread && mentions === 0 && <span className="unread-dot" />}
         <ChannelIcon type={ch.type} />
         <span className="channel-name">{ch.name}</span>
         {connectedHere && <span className="voice-live">●</span>}
-        {u > 0 && <span className="channel-badge">{u > 99 ? '99+' : u}</span>}
+        {mentions > 0 && <span className="channel-badge">{mentions > 99 ? '99+' : mentions}</span>}
       </button>
     )
   }

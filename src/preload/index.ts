@@ -25,6 +25,7 @@ const api = {
   typing: () => ipcRenderer.invoke(IPC.typing),
   setPresence: (status: string, activity: string) => ipcRenderer.invoke(IPC.setPresence, status, activity),
   loadMembers: () => ipcRenderer.invoke(IPC.loadMembers),
+  getProfile: (id: string) => ipcRenderer.invoke(IPC.getProfile, id),
   pickFile: (): Promise<string | null> => ipcRenderer.invoke(IPC.pickFile),
   pickAudioFile: (): Promise<string | null> => ipcRenderer.invoke(IPC.pickAudioFile),
 

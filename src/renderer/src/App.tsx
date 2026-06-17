@@ -10,6 +10,7 @@ import MusicPanel from './components/MusicPanel'
 import Settings from './components/Settings'
 import Toasts from './components/Toasts'
 import ContextMenu from './components/ContextMenu'
+import ProfileCard from './components/ProfileCard'
 
 export default function App(): JSX.Element {
   const ready = useStore((s) => s.ready)
@@ -54,6 +55,7 @@ export default function App(): JSX.Element {
         )}
       </div>
       <ContextMenu />
+      <ProfileCard />
       <Toasts />
     </div>
   )

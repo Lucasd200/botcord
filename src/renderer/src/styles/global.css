@@ -2136,3 +2136,164 @@ a:hover {
   background: var(--hover);
   color: var(--text);
 }
+
+/* Clickable author / avatar + unread dot ------------------- */
+.avatar-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 50%;
+}
+.avatar-btn:hover {
+  filter: brightness(1.1);
+}
+.message-author.clickable {
+  cursor: pointer;
+}
+.message-author.clickable:hover {
+  text-decoration: underline;
+}
+.channel-row {
+  position: relative;
+}
+.unread-dot {
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 4px;
+  height: 9px;
+  background: var(--text);
+  border-radius: 0 3px 3px 0;
+}
+
+/* Profile card ---------------------------------------------- */
+.profile-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 320;
+  background: rgba(0, 0, 0, 0.6);
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(3px);
+}
+.profile-card {
+  width: 350px;
+  max-width: 92vw;
+  background: var(--bg-float);
+  border-radius: 14px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 24px 64px var(--shadow);
+  animation: pop 0.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.profile-loading {
+  height: 220px;
+  display: grid;
+  place-items: center;
+}
+.profile-banner {
+  height: 96px;
+}
+.profile-avatar-wrap {
+  position: absolute;
+  top: 50px;
+  left: 18px;
+  padding: 6px;
+  background: var(--bg-float);
+  border-radius: 50%;
+}
+.profile-close {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.4);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 13px;
+}
+.profile-close:hover {
+  background: rgba(0, 0, 0, 0.65);
+}
+.profile-body {
+  padding: 50px 18px 18px;
+}
+.profile-names {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.profile-display {
+  font-size: 20px;
+  font-weight: 700;
+}
+.profile-username {
+  font-size: 14px;
+  color: var(--text-muted);
+}
+.profile-status {
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-dim);
+}
+.profile-divider {
+  height: 1px;
+  background: var(--divider);
+  margin: 14px 0;
+}
+.profile-section {
+  margin-bottom: 16px;
+}
+.profile-section h4 {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-dim);
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+.role-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.role-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--bg-input);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+.role-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.profile-dates {
+  display: flex;
+  gap: 26px;
+}
+.profile-dates h4 {
+  margin-bottom: 2px;
+}
+.profile-dates span {
+  font-size: 13px;
+}
+.profile-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+.profile-actions .btn-primary,
+.profile-actions .btn-secondary {
+  margin-top: 0;
+  flex: 1;
+  text-align: center;
+}

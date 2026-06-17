@@ -15,6 +15,8 @@ export default function MessageInput(): JSX.Element {
   const setEditing = useStore((s) => s.setEditing)
   const sendMessage = useStore((s) => s.sendMessage)
   const pushToast = useStore((s) => s.pushToast)
+  const mentionRequest = useStore((s) => s.mentionRequest)
+  const mentionTargetId = useStore((s) => s.mentionTargetId)
   const [text, setText] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
   const ref = useRef<HTMLTextAreaElement>(null)
@@ -34,6 +36,13 @@ export default function MessageInput(): JSX.Element {
     el.style.height = 'auto'
     el.style.height = Math.min(el.scrollHeight, 220) + 'px'
   }, [text])
+
+  // Insert a ping when "Mention" is clicked in a profile card.
+  useEffect(() => {
+    if (!mentionRequest || !mentionTargetId) return
+    setText((t) => (t ? t.replace(/\s*$/, ' ') : '') + `<@${mentionTargetId}> `)
+    ref.current?.focus()
+  }, [mentionRequest, mentionTargetId])
 
   const triggerTyping = (): void => {
     const now = Date.now()
