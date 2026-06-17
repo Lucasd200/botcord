@@ -47,13 +47,32 @@ Botcord packages for all three platforms with [electron-builder](https://www.ele
 
 ```bash
 npm run dist:win     # Windows  -> release/Botcord-Setup-<version>.exe (NSIS)
-npm run dist:mac     # macOS    -> release/Botcord-<version>-<arch>.dmg (x64 + arm64)
+npm run dist:mac     # macOS    -> release/Botcord-<version>-<arch>.zip (x64 + arm64)
 npm run dist:linux   # Linux    -> release/Botcord-<version>-<arch>.AppImage + .deb
 ```
 
-> Each OS must be built on (or cross-built for) that OS. Build the Windows installer on Windows, the dmg on macOS, etc.
+> Each OS must be built on (or cross-built for) that OS. Build the Windows installer on Windows, the macOS zip on macOS, etc.
 
 Output lands in `release/`.
+
+---
+
+## 🍎 Opening on macOS
+
+Mac builds are **ad-hoc signed but not notarized** (notarization needs a paid Apple Developer account). Because of that, macOS Gatekeeper won't let them open on a plain double-click the first time — this is expected for any app distributed outside the App Store.
+
+Download the build that matches your Mac — **`-arm64`** for Apple Silicon (M1/M2/M3/M4), **`-x64`** for Intel — unzip it, move **Botcord.app** to `/Applications`, then **on first launch only**:
+
+- **Right-click (or Control-click) Botcord.app → Open**, then click **Open** in the dialog. macOS remembers the choice, so afterwards it launches normally.
+
+If macOS still says the app is damaged or can't be checked, clear the download quarantine flag and run it:
+
+```bash
+xattr -dr com.apple.quarantine /Applications/Botcord.app
+open /Applications/Botcord.app
+```
+
+> The "damaged" error specifically happens when a downloaded build isn't properly signed. Botcord's build now ad-hoc signs the bundle (see `scripts/after-pack.js`), which turns that dead end into the normal right-click → Open prompt above.
 
 ---
 
@@ -66,7 +85,7 @@ Output lands in `release/`.
 | `src/shared/` | Types + IPC channel names shared across processes |
 | `src/renderer/` | React + TypeScript UI (`components/`, `theme.ts`, `store.ts`, `format.tsx`, `styles/`) |
 | `build/` | App icons (`icon.png`, `icon.ico`) + `electron-builder` resources |
-| `scripts/` | `make-icon.ps1` — icon generator |
+| `scripts/` | `make-icon.ps1` — icon generator · `after-pack.js` — macOS ad-hoc signing hook |
 
 ---
 
