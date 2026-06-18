@@ -91,6 +91,14 @@ export interface MessageData {
   /** A real ping for notifications: DM, direct @mention or role mention — excludes @everyone/@here. */
   directPing: boolean
   reactions: Reaction[]
+  /** Resolves <@id>/<@&id>/<#id> tokens in content to readable names. */
+  mentions: MessageMentions
+}
+
+export interface MessageMentions {
+  users: Record<string, string>
+  roles: Record<string, { name: string; color: string | null }>
+  channels: Record<string, string>
 }
 
 export interface Reaction {

@@ -84,7 +84,7 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
             </div>
           )}
 
-          {m.content && <div className="message-text">{formatContent(m.content)}{m.editedTimestamp && <span className="edited">(edited)</span>}</div>}
+          {m.content && <div className="message-text">{formatContent(m.content, m.mentions)}{m.editedTimestamp && <span className="edited">(edited)</span>}</div>}
 
           {m.images.length > 0 && (
             <div className="message-media">

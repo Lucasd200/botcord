@@ -372,6 +372,22 @@ export class BotManager extends EventEmitter {
         ? message.member.displayHexColor
         : null
 
+    const mentions = {
+      users: {} as Record<string, string>,
+      roles: {} as Record<string, { name: string; color: string | null }>,
+      channels: {} as Record<string, string>
+    }
+    for (const [id, user] of message.mentions.users) {
+      const member = message.mentions.members?.get(id)
+      mentions.users[id] = member?.displayName || user.username
+    }
+    for (const [id, role] of message.mentions.roles) {
+      mentions.roles[id] = { name: role.name, color: role.hexColor !== '#000000' ? role.hexColor : null }
+    }
+    for (const [id, ch] of message.mentions.channels) {
+      mentions.channels[id] = (ch as any).name || 'channel'
+    }
+
     return {
       id: message.id,
       channelId: message.channelId,
@@ -390,6 +406,7 @@ export class BotManager extends EventEmitter {
       files,
       mentionsMe,
       directPing,
+      mentions,
       reactions: message.reactions.cache.map((r) => ({
         emoji: r.emoji.name || '❓',
         id: r.emoji.id,

@@ -1,96 +1,93 @@
 # Botcord
 
-A beautiful desktop client for **your own Discord bot** — built with the same stack the real Discord app uses (**Electron + React + TypeScript**, powered by **discord.js**).
+**Run your Discord bot like you'd run an account.** Botcord is a desktop app that logs in with your bot's token and gives you a full, familiar Discord-style window — so instead of staring at a terminal or a dashboard, you can actually *see* the servers your bot is in, read the chat, send messages, react, manage members, and even play music in voice. It looks and feels like Discord, but everything you do happens as your bot.
 
-Log in with your bot token and you get a full Discord-style workspace: server rail, categories & channels, live chat with markdown, images, files, replies, edits, reactions and search, a member list grouped by role, DMs, bot-presence control, desktop notifications, and a full themes system — all fast, native, and cross-platform.
+It's free, it updates itself, and it runs on **Windows** and **macOS**.
 
-> This is **Botcord 2.0** — a complete rewrite of the original Python/customtkinter client into a real Electron app.
-
----
-
-## ✨ Features
-
-- **Secure login** — paste your bot token; it's encrypted with your OS keychain (DPAPI / Keychain / libsecret) via Electron `safeStorage` and never stored in plain text. "Keep me logged in" for instant auto-login.
-- **Server rail** — all your bot's servers as icons, **drag to reorder**, unread badges, hover tooltips with member/online counts, a **Home** button for DMs.
-- **Channels by category** — collapsible categories, text / voice / announcement / forum / stage icons, permission-aware (hides channels the bot can't see), unread indicators.
-- **Rich chat** — grouped messages, real avatars, role colors, day dividers, **markdown** (bold/italic/underline/strike, inline & block code, quotes, links, mention pills), **inline images & GIFs**, file cards, and **reactions**.
-- **Message actions** — reply, add reaction, **edit** & **delete** your bot's own messages, copy text — all from a hover toolbar.
-- **Composer** — auto-growing input, emoji picker, file attach, typing indicator, send on Enter / newline on Shift+Enter.
-- **Members** — online members grouped by hoisted role, status dots, activity, role colors; double-click to DM.
-- **Search** — instant in-channel message/author search.
-- **Bot presence** — set your bot's status (Online / Idle / DND / Invisible) and "Playing …" activity right from Settings.
-- **Notifications** — desktop notifications with **All / Only @mentions & DMs / None** modes.
-- **Themes** — Light / Dark / Ash / Onyx / **Sync (follow OS)**, 19 Nitro-style **color themes**, a custom **accent color** picker, compact mode — all applied instantly.
-- **Frameless custom UI** — custom title bar with live gateway latency, native window controls, single-instance.
+> Botcord is a complete rewrite of the original Python version into a real desktop app (Electron + React + discord.js), so it's faster, prettier, and far more capable.
 
 ---
 
-## 🚀 Run from source
+## Get it
+
+Head to **[botcord.dev](https://botcord.dev)** and click **Download**, then pick your platform:
+
+- **Windows** — run the installer (`Botcord-Setup.exe`). It adds Botcord to your Start menu, so you can find it by searching "Botcord".
+- **macOS** — download the `.zip` for your Mac (**arm64** for Apple Silicon, **x64** for Intel), unzip it, and drag **Botcord.app** into Applications. The first time, **right-click the app → Open** (this is a one-time macOS thing for apps from outside the App Store). If it ever says the app is "damaged", run this once in Terminal and you're set:
+  ```bash
+  xattr -dr com.apple.quarantine /Applications/Botcord.app
+  ```
+
+Once a new version ships, Botcord tells you with an **"Update Ready"** button in the top-right — click it and you're on the latest.
+
+---
+
+## Log in
+
+You sign in with your **bot's token**, not a username and password.
+
+1. Open the [Discord Developer Portal](https://discord.com/developers/applications) and pick your application.
+2. Go to **Bot → Reset Token** and copy it.
+3. While you're there, turn on the three **Privileged Gateway Intents** (Message Content, Server Members, Presence). Botcord still works without them, but you'll get the full experience with them on.
+4. Paste the token into Botcord and hit **Log in**. Tick **Keep me logged in** and it'll reconnect automatically next time.
+
+Your token is encrypted with your operating system's keychain and never leaves your computer.
+
+---
+
+## A quick tour
+
+Once you're in, it'll feel instantly familiar:
+
+- **Pick a server** from the rail on the far left, then **choose a channel**. You can drag servers to reorder them, and the **🏠 home button** holds your DMs.
+- **Chat like normal.** Type a message and press Enter. Markdown works (**bold**, *italics*, `code`, and code blocks), and so do custom emojis, images, and file attachments.
+- **Mention people.** Start typing `@` and a list of members and roles pops up — arrow keys or click to drop in a real ping. Mentions show the actual name and role color, not raw IDs.
+- **React and manage messages.** Hover a message for quick reactions, or **right-click** any message for the full menu: reply, add a reaction, edit or delete your bot's own messages, copy the text, link, or ID.
+- **See who's who.** Click anyone's **name or avatar** to open their profile — avatar, roles, status, and join date — with buttons to **mention** them or **DM** them.
+- **Hang out in voice.** Click a 🔊 voice channel to make your bot join. You'll see everyone connected listed right under the channel.
+- **Play music.** Open the music panel and paste a **YouTube, Spotify, or SoundCloud** link (or just type a song name). Queue tracks, skip, loop, shuffle, adjust volume, or drop in a local file as a soundboard clip.
+- **Make it yours.** In Settings → Appearance, switch between Light, Dark, Ash, Onyx, or Sync-with-your-OS, pick from 19 color themes, or set a custom accent — it all applies instantly.
+- **Stay notified, your way.** Choose **All messages**, **Only @mentions & DMs**, or **None**. The channel list shows a red badge only when your bot is actually mentioned, so busy servers stay quiet.
+
+That's it — there's nothing to configure. Log in and use it.
+
+---
+
+## Having trouble?
+
+- **"Enable the intents" on login** → flip on Message Content, Server Members, and Presence in the Developer Portal (Bot tab), then log in again.
+- **No members showing** → that needs the Server Members (and ideally Presence) intent.
+- **Music won't play** → make sure the bot joined a voice channel first and has permission to Connect and Speak there.
+
+Still stuck? Join the **[Discord](https://discord.gg/3yn4qSX4Gj)** or email **lucas@botcord.dev**.
+
+---
+
+## For developers
+
+Want to run it from source or build it yourself?
 
 ```bash
 npm install
-npm run dev
+npm run dev        # launch in development
 ```
 
-The app opens on the login screen. Paste your bot token to connect.
-
-### Getting a bot token
-1. Open the [Discord Developer Portal](https://discord.com/developers/applications) → your application → **Bot**.
-2. Click **Reset Token** and copy it.
-3. Under **Privileged Gateway Intents**, enable **Message Content**, **Server Members** and **Presence Intent** (Botcord degrades gracefully if some are off, but enable them for the full experience).
-
----
-
-## 📦 Build installers
-
-Botcord packages for all three platforms with [electron-builder](https://www.electron.build/):
+Build installers (each on its own OS):
 
 ```bash
-npm run dist:win     # Windows  -> release/Botcord-Setup-<version>.exe (NSIS)
-npm run dist:mac     # macOS    -> release/Botcord-<version>-<arch>.zip (x64 + arm64)
-npm run dist:linux   # Linux    -> release/Botcord-<version>-<arch>.AppImage + .deb
+npm run dist:win     # Windows installer (.exe)
+npm run dist:mac     # macOS app (.zip, x64 + arm64)
 ```
 
-> Each OS must be built on (or cross-built for) that OS. Build the Windows installer on Windows, the macOS zip on macOS, etc.
+Under the hood: **Electron + React + TypeScript**, with **discord.js** for the bot connection, bundled by electron-vite and packaged with electron-builder.
 
-Output lands in `release/`.
-
----
-
-## 🍎 Opening on macOS
-
-Mac builds are **ad-hoc signed but not notarized** (notarization needs a paid Apple Developer account). Because of that, macOS Gatekeeper won't let them open on a plain double-click the first time — this is expected for any app distributed outside the App Store.
-
-Download the build that matches your Mac — **`-arm64`** for Apple Silicon (M1/M2/M3/M4), **`-x64`** for Intel — unzip it, move **Botcord.app** to `/Applications`, then **on first launch only**:
-
-- **Right-click (or Control-click) Botcord.app → Open**, then click **Open** in the dialog. macOS remembers the choice, so afterwards it launches normally.
-
-If macOS still says the app is damaged or can't be checked, clear the download quarantine flag and run it:
-
-```bash
-xattr -dr com.apple.quarantine /Applications/Botcord.app
-open /Applications/Botcord.app
-```
-
-> The "damaged" error specifically happens when a downloaded build isn't properly signed. Botcord's build now ad-hoc signs the bundle (see `scripts/after-pack.js`), which turns that dead end into the normal right-click → Open prompt above.
+| Folder | What's in it |
+|--------|--------------|
+| `src/main/` | The Electron main process — window, the discord.js bot manager, voice/music, settings |
+| `src/preload/` | The secure bridge between the app and the bot |
+| `src/renderer/` | The React interface you actually see |
+| `scripts/` | Icon generator + the macOS signing hook |
 
 ---
 
-## 🧱 Project layout
-
-| Path | Purpose |
-|------|---------|
-| `src/main/` | Electron main process — `index.ts` (window + IPC), `bot.ts` (discord.js manager), `store.ts` (encrypted settings) |
-| `src/preload/` | Secure `contextBridge` API exposed to the renderer |
-| `src/shared/` | Types + IPC channel names shared across processes |
-| `src/renderer/` | React + TypeScript UI (`components/`, `theme.ts`, `store.ts`, `format.tsx`, `styles/`) |
-| `build/` | App icons (`icon.png`, `icon.ico`) + `electron-builder` resources |
-| `scripts/` | `make-icon.ps1` — icon generator · `after-pack.js` — macOS ad-hoc signing hook |
-
----
-
-## 🛠 Tech
-
-Electron 33 · React 18 · TypeScript 5 · discord.js 14 · Vite (electron-vite) · Zustand · electron-builder
-
-Built by Lucas · [botcord.dev](https://botcord.dev)
+Built by Lucas · [botcord.dev](https://botcord.dev) · [Discord](https://discord.gg/3yn4qSX4Gj)

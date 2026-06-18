@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from 'react'
+import type { MessageMentions } from '@shared/types'
 
 /**
  * A small, safe subset of Discord markdown rendered to React nodes (never
@@ -95,6 +96,7 @@ function styleText(text: string, keyBase: string): ReactNode[] {
 
 const EMOJI_TOKEN = /<(a)?:(\w+):(\d+)>/
 let jumboEmoji = false // set per formatContent call (synchronous render)
+let currentMentions: MessageMentions | null = null
 
 function renderMentions(text: string, keyBase: string, jumbo = jumboEmoji): ReactNode {
   const parts: ReactNode[] = []
@@ -123,11 +125,23 @@ function renderMentions(text: string, keyBase: string, jumbo = jumboEmoji): Reac
       )
     } else {
       let label = raw
-      if (raw.startsWith('<#')) label = '# channel'
-      else if (raw.startsWith('<@&')) label = '@ role'
-      else if (raw.startsWith('<@')) label = '@ user'
+      let color: string | null = null
+      const id = raw.match(/\d+/)?.[0] || ''
+      if (raw.startsWith('<#')) {
+        label = '#' + (currentMentions?.channels[id] || 'channel')
+      } else if (raw.startsWith('<@&')) {
+        const role = currentMentions?.roles[id]
+        label = '@' + (role?.name || 'role')
+        color = role?.color || null
+      } else if (raw.startsWith('<@')) {
+        label = '@' + (currentMentions?.users[id] || 'user')
+      }
       parts.push(
-        <span key={`${keyBase}-m${i}`} className="mention-pill">
+        <span
+          key={`${keyBase}-m${i}`}
+          className="mention-pill"
+          style={color ? { color, background: color + '28' } : undefined}
+        >
           {label}
         </span>
       )
@@ -145,8 +159,9 @@ function isJumbo(text: string): boolean {
   return stripped.length === 0 && /<a?:\w+:\d+>/.test(text)
 }
 
-export function formatContent(text: string): ReactNode {
+export function formatContent(text: string, mentions?: MessageMentions): ReactNode {
   jumboEmoji = isJumbo(text)
+  currentMentions = mentions ?? null
   const tokens = splitCode(text)
   return (
     <>
