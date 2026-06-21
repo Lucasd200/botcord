@@ -3,7 +3,7 @@
   "version": "2.0.3",
   "description": "Botcord — a desktop client for your own Discord bot. Log in with a bot token, browse servers and channels, read and send messages, manage members, and more.",
   "author": "Lucas",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "main": "./out/main/index.js",
   "homepage": "https://botcord.dev",
   "scripts": {
