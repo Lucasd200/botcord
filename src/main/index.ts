@@ -8,6 +8,7 @@ import { IPC } from '@shared/types'
 import type { Settings } from '@shared/types'
 
 const isDev = !app.isPackaged
+const isMac = process.platform === 'darwin'
 let mainWindow: BrowserWindow | null = null
 const bot = new BotManager()
 const updater = initUpdater(() => mainWindow)
@@ -39,12 +40,15 @@ function createWindow(): void {
     minWidth: 940,
     minHeight: 560,
     show: false,
-    frame: false,
-    titleBarStyle: 'hidden',
     backgroundColor: '#1e1f22',
     title: 'Botcord',
     icon: iconPath ? nativeImage.createFromPath(iconPath) : undefined,
     autoHideMenuBar: true,
+    // macOS: keep the native traffic lights (left), inset into our custom title
+    // bar. Windows/Linux: frameless window with our own controls (right).
+    ...(isMac
+      ? { titleBarStyle: 'hiddenInset' as const, trafficLightPosition: { x: 13, y: 10 } }
+      : { frame: false as const }),
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       sandbox: false,

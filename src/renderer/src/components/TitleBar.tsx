@@ -8,14 +8,16 @@ export default function TitleBar(): JSX.Element {
   const view = useStore((s) => s.view)
   const update = useStore((s) => s.update)
   const installUpdate = useStore((s) => s.installUpdate)
+  const isMac = api.platform === 'darwin'
 
   useEffect(() => {
+    if (isMac) return
     api.windowIsMaximized().then(setMaximized)
     return api.onMaximizeChange((v: boolean) => setMaximized(v))
-  }, [])
+  }, [isMac])
 
   return (
-    <div className="titlebar">
+    <div className={'titlebar' + (isMac ? ' mac' : '')}>
       <div className="titlebar-drag">
         <div className="titlebar-brand">
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden>
@@ -46,19 +48,23 @@ export default function TitleBar(): JSX.Element {
             </svg>
           </button>
         )}
-        <button className="tb-btn" onClick={() => api.windowMinimize()} aria-label="Minimize">
-          <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="currentColor" y="5" width="11" height="1" /></svg>
-        </button>
-        <button className="tb-btn" onClick={() => api.windowMaximize()} aria-label="Maximize">
-          {maximized ? (
-            <svg width="11" height="11" viewBox="0 0 11 11"><path fill="none" stroke="currentColor" d="M2.5 2.5h6v6h-6z M3.5 2.5V1.5h6v6h-1" /></svg>
-          ) : (
-            <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="none" stroke="currentColor" x="1.5" y="1.5" width="8" height="8" /></svg>
-          )}
-        </button>
-        <button className="tb-btn tb-close" onClick={() => api.windowClose()} aria-label="Close">
-          <svg width="11" height="11" viewBox="0 0 11 11"><path stroke="currentColor" strokeWidth="1.1" d="M1 1l9 9M10 1l-9 9" /></svg>
-        </button>
+        {!isMac && (
+          <>
+            <button className="tb-btn" onClick={() => api.windowMinimize()} aria-label="Minimize">
+              <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="currentColor" y="5" width="11" height="1" /></svg>
+            </button>
+            <button className="tb-btn" onClick={() => api.windowMaximize()} aria-label="Maximize">
+              {maximized ? (
+                <svg width="11" height="11" viewBox="0 0 11 11"><path fill="none" stroke="currentColor" d="M2.5 2.5h6v6h-6z M3.5 2.5V1.5h6v6h-1" /></svg>
+              ) : (
+                <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="none" stroke="currentColor" x="1.5" y="1.5" width="8" height="8" /></svg>
+              )}
+            </button>
+            <button className="tb-btn tb-close" onClick={() => api.windowClose()} aria-label="Close">
+              <svg width="11" height="11" viewBox="0 0 11 11"><path stroke="currentColor" strokeWidth="1.1" d="M1 1l9 9M10 1l-9 9" /></svg>
+            </button>
+          </>
+        )}
       </div>
     </div>
   )

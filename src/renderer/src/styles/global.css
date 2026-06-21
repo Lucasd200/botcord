@@ -141,6 +141,13 @@ a:hover {
   align-items: center;
   padding-left: 12px;
 }
+/* macOS: leave room for the native traffic lights on the left. */
+.titlebar.mac .titlebar-drag {
+  padding-left: 80px;
+}
+.titlebar.mac .tb-update {
+  margin-right: 6px;
+}
 .titlebar-brand {
   display: flex;
   align-items: center;

@@ -11,6 +11,7 @@ function on(channel: string, cb: Listener): () => void {
 }
 
 const api = {
+  platform: process.platform as string,
   // actions (renderer -> main)
   login: (token: string) => ipcRenderer.invoke(IPC.login, token),
   logout: () => ipcRenderer.invoke(IPC.logout),
