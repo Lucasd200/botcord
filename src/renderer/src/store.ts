@@ -12,7 +12,8 @@ import type {
   Track,
   NowPlaying,
   VoiceStatus,
-  ProfileData
+  ProfileData,
+  GuildDetail
 } from '@shared/types'
 
 export interface ContextMenuState {
@@ -61,6 +62,9 @@ interface State {
   showSettings: boolean
   showMusic: boolean
   showEmbed: boolean
+  showServerSettings: boolean
+  serverDetail: GuildDetail | null
+  serverDetailLoading: boolean
   typingUser: string | null
 
   voice: VoiceStatus
@@ -94,6 +98,9 @@ interface State {
   setShowSettings: (v: boolean) => void
   setShowMusic: (v: boolean) => void
   setShowEmbed: (v: boolean) => void
+  openServerSettings: () => Promise<void>
+  closeServerSettings: () => void
+  reloadServerDetail: () => Promise<void>
   toggleCollapsed: (key: string) => void
   setReplyTarget: (m: MessageData | null) => void
   setEditing: (id: string | null) => void
@@ -135,6 +142,9 @@ export const useStore = create<State>((set, get) => ({
   showSettings: false,
   showMusic: false,
   showEmbed: false,
+  showServerSettings: false,
+  serverDetail: null,
+  serverDetailLoading: false,
   typingUser: null,
   voice: { connected: false, channelName: '' },
   nowPlaying: null,
@@ -332,6 +342,24 @@ export const useStore = create<State>((set, get) => ({
   setShowSettings: (v) => set({ showSettings: v }),
   setShowMusic: (v) => set({ showMusic: v }),
   setShowEmbed: (v) => set({ showEmbed: v }),
+  openServerSettings: async () => {
+    const gid = get().activeGuildId
+    if (!gid) return
+    set({ showServerSettings: true, serverDetail: null, serverDetailLoading: true })
+    const detail = await api.getGuildDetail(gid)
+    if (detail) set({ serverDetail: detail, serverDetailLoading: false })
+    else {
+      set({ showServerSettings: false, serverDetailLoading: false })
+      get().pushToast('Could not load server settings.', 'error')
+    }
+  },
+  closeServerSettings: () => set({ showServerSettings: false, serverDetail: null }),
+  reloadServerDetail: async () => {
+    const gid = get().serverDetail?.id || get().activeGuildId
+    if (!gid) return
+    const detail = await api.getGuildDetail(gid)
+    if (detail) set({ serverDetail: detail })
+  },
   toggleCollapsed: (key) => set((s) => ({ collapsed: { ...s.collapsed, [key]: !s.collapsed[key] } })),
   setReplyTarget: (m) => set({ replyTarget: m, editingId: null }),
   setEditing: (id) => set({ editingId: id, replyTarget: null }),

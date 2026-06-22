@@ -2680,3 +2680,353 @@ a:hover {
   overflow: hidden;
   text-overflow: ellipsis;
 }
+
+/* ============================================================
+   Server Settings + management
+   ============================================================ */
+.sidebar-header-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sidebar-gear {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 4px;
+  color: var(--text-dim);
+}
+.sidebar-gear:hover {
+  background: var(--hover);
+  color: var(--text);
+}
+
+/* join button on a voice channel row */
+.voice-join {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 4px;
+  color: var(--text-dim);
+  flex-shrink: 0;
+}
+.voice-join:hover {
+  background: var(--hover-light);
+  color: var(--online);
+}
+.channel-row.connected .voice-join {
+  color: var(--online);
+}
+
+.ss-loading,
+.ss-placeholder,
+.ss-empty {
+  color: var(--text-dim);
+  font-size: 14px;
+  padding: 12px 0;
+}
+.ss-placeholder {
+  display: grid;
+  place-items: center;
+  height: 100%;
+  text-align: center;
+  padding: 24px;
+}
+
+/* overview */
+.ss-overview {
+  display: flex;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+.ss-stat {
+  flex: 1;
+  background: var(--bg-dark);
+  border-radius: var(--radius);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.ss-stat-num {
+  font-size: 24px;
+  font-weight: 700;
+}
+.ss-stat-label {
+  font-size: 12px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.cap-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0 16px;
+}
+.cap-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 12px;
+  background: var(--bg-dark);
+  border-radius: 6px;
+  font-size: 14px;
+}
+.cap-pill {
+  font-size: 12px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 10px;
+}
+.cap-pill.yes {
+  background: color-mix(in srgb, var(--online) 22%, transparent);
+  color: var(--online);
+}
+.cap-pill.no {
+  background: color-mix(in srgb, var(--danger) 18%, transparent);
+  color: var(--danger);
+}
+
+/* roles list */
+.role-list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.role-list-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: var(--bg-dark);
+  border-radius: 6px;
+}
+.role-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.role-dot.small {
+  width: 10px;
+  height: 10px;
+}
+.role-list-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+.role-managed,
+.role-hoist {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-faint);
+  border: 1px solid var(--divider);
+  border-radius: 4px;
+  padding: 1px 5px;
+}
+.role-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+/* split master-detail (members, channels) */
+.ss-split {
+  display: flex;
+  gap: 18px;
+  height: calc(100vh - 180px);
+  max-width: none;
+}
+.ss-list-col {
+  width: 250px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.ss-detail-col {
+  flex: 1;
+  min-width: 0;
+  background: var(--bg-dark);
+  border-radius: var(--radius);
+  padding: 18px;
+  overflow-y: auto;
+}
+.ss-search {
+  width: 100%;
+  background: var(--bg-darker);
+  border-radius: 6px;
+  padding: 8px 10px;
+  color: var(--text);
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+.ss-create {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.ss-create .ss-search {
+  margin-bottom: 0;
+}
+.ss-scroll {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  scrollbar-width: thin;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.ss-member-row,
+.ss-channel-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 5px;
+  color: var(--text-dim);
+  text-align: left;
+  width: 100%;
+}
+.ss-member-row:hover,
+.ss-channel-row:hover {
+  background: var(--hover);
+  color: var(--text-muted);
+}
+.ss-member-row.active,
+.ss-channel-row.active {
+  background: var(--active);
+  color: var(--text);
+}
+.ss-member-name,
+.ss-channel-name {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 14px;
+}
+.ss-channel-glyph {
+  width: 18px;
+  text-align: center;
+  color: var(--text-faint);
+  flex-shrink: 0;
+}
+.ss-channel-row.cat .ss-channel-name {
+  text-transform: uppercase;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+/* member manage detail */
+.ss-member-head {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.ss-member-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.ss-member-sub {
+  font-size: 12px;
+  color: var(--text-dim);
+}
+.ss-role-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px 12px;
+  margin-bottom: 8px;
+}
+.ss-role-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 4px;
+  font-size: 14px;
+  cursor: pointer;
+}
+.ss-role-check.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.ss-warn {
+  font-size: 12px;
+  color: var(--idle);
+  margin: 4px 0 8px;
+}
+.ss-mod-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+.ss-mod-row .settings-input {
+  flex: 1;
+  min-width: 120px;
+}
+.ss-timeout {
+  width: auto;
+}
+
+/* channel permission editor */
+.perm-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 10px;
+}
+.perm-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: 5px;
+}
+.perm-row:hover {
+  background: var(--bg-darker);
+}
+.perm-label {
+  font-size: 14px;
+}
+.perm-tri {
+  display: flex;
+  gap: 4px;
+}
+.perm-btn {
+  width: 28px;
+  height: 24px;
+  border-radius: 4px;
+  background: var(--bg-darker);
+  color: var(--text-faint);
+  font-size: 13px;
+  font-weight: 700;
+}
+.perm-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+.perm-btn.deny.on {
+  background: var(--danger);
+  color: #fff;
+}
+.perm-btn.allow.on {
+  background: var(--online);
+  color: #fff;
+}
+.perm-btn.neutral.on {
+  background: var(--text-faint);
+  color: var(--bg-darker);
+}
+.ss-channel-manage .settings-label {
+  margin-top: 16px;
+}

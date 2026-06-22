@@ -29,6 +29,7 @@ export default function ChannelSidebar(): JSX.Element {
   const user = useStore((s) => s.user)
   const setShowSettings = useStore((s) => s.setShowSettings)
   const setShowMusic = useStore((s) => s.setShowMusic)
+  const openServerSettings = useStore((s) => s.openServerSettings)
   const openProfile = useStore((s) => s.openProfile)
   const joinVoiceChannel = useStore((s) => s.voice)
   const guild = useMemo(() => guilds.find((g) => g.id === activeGuildId) || null, [guilds, activeGuildId])
@@ -54,8 +55,8 @@ export default function ChannelSidebar(): JSX.Element {
             (isVoice ? 'voice ' : '') +
             (connectedHere ? 'connected' : '')
           }
-          onClick={() => (isVoice ? joinVoice(ch.id) : openChannel(ch.id))}
-          title={isVoice ? 'Click to join voice' : ch.topic || ch.name}
+          onClick={() => openChannel(ch.id)}
+          title={isVoice ? 'Open voice channel chat' : ch.topic || ch.name}
         >
           {hasUnread && mentions === 0 && <span className="unread-dot" />}
           <ChannelIcon type={ch.type} />
@@ -63,6 +64,27 @@ export default function ChannelSidebar(): JSX.Element {
           {connectedHere && <span className="voice-live">●</span>}
           {isVoice && vMembers.length > 0 && <span className="voice-count">{vMembers.length}</span>}
           {mentions > 0 && <span className="channel-badge">{mentions > 99 ? '99+' : mentions}</span>}
+          {isVoice && (
+            <span
+              className="voice-join"
+              role="button"
+              tabIndex={0}
+              title={connectedHere ? 'Connected' : 'Join voice'}
+              onClick={(e) => {
+                e.stopPropagation()
+                joinVoice(ch.id)
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault()
+                  e.stopPropagation()
+                  joinVoice(ch.id)
+                }
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.58 3.6a1 1 0 0 1-.25 1l-2.23 2.2Z" /></svg>
+            </span>
+          )}
         </button>
         {isVoice &&
           vMembers.map((vm) => (
@@ -78,9 +100,21 @@ export default function ChannelSidebar(): JSX.Element {
   return (
     <aside className="channel-sidebar">
       <header className="sidebar-header">
-        <span className="sidebar-title">{activeGuildId === null ? 'Direct Messages' : guild?.name || 'Server'}</span>
+        <div className="sidebar-header-text">
+          <span className="sidebar-title">{activeGuildId === null ? 'Direct Messages' : guild?.name || 'Server'}</span>
+          {activeGuildId !== null && guild && (
+            <span className="sidebar-online">{guild.onlineCount} online</span>
+          )}
+        </div>
         {activeGuildId !== null && guild && (
-          <span className="sidebar-online">{guild.onlineCount} online</span>
+          <button
+            className="sidebar-gear"
+            title="Server Settings"
+            aria-label="Server Settings"
+            onClick={() => openServerSettings()}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+          </button>
         )}
       </header>
 

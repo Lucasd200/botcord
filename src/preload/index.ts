@@ -28,6 +28,46 @@ const api = {
   setPresence: (status: string, activity: string) => ipcRenderer.invoke(IPC.setPresence, status, activity),
   loadMembers: () => ipcRenderer.invoke(IPC.loadMembers),
   getProfile: (id: string) => ipcRenderer.invoke(IPC.getProfile, id),
+
+  // server settings & management
+  getGuildDetail: (id: string): Promise<import('@shared/types').GuildDetail | null> =>
+    ipcRenderer.invoke(IPC.getGuildDetail, id),
+  createChannel: (
+    guildId: string,
+    name: string,
+    kind: 'text' | 'voice' | 'category',
+    parentId?: string | null
+  ): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.createChannel, guildId, name, kind, parentId),
+  deleteChannel: (id: string): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.deleteChannel, id),
+  editChannel: (
+    id: string,
+    changes: { name?: string; topic?: string }
+  ): Promise<import('@shared/types').ActionResult> => ipcRenderer.invoke(IPC.editChannel, id, changes),
+  getChannelPermissions: (id: string): Promise<import('@shared/types').ChannelOverwrite[]> =>
+    ipcRenderer.invoke(IPC.getChannelPermissions, id),
+  setChannelPermission: (
+    id: string,
+    targetId: string,
+    perm: string,
+    value: import('@shared/types').PermValue
+  ): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.setChannelPermission, id, targetId, perm, value),
+  setMemberRole: (
+    guildId: string,
+    userId: string,
+    roleId: string,
+    add: boolean
+  ): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.setMemberRole, guildId, userId, roleId, add),
+  kickMember: (guildId: string, userId: string, reason?: string): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.kickMember, guildId, userId, reason),
+  banMember: (guildId: string, userId: string, reason?: string): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.banMember, guildId, userId, reason),
+  timeoutMember: (guildId: string, userId: string, minutes: number): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.timeoutMember, guildId, userId, minutes),
+
   pickFile: (): Promise<string | null> => ipcRenderer.invoke(IPC.pickFile),
   pickAudioFile: (): Promise<string | null> => ipcRenderer.invoke(IPC.pickAudioFile),
 

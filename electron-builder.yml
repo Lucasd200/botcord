@@ -14,6 +14,9 @@ files:
 asarUnpack:
   - "**/*.node"
   - "**/ffmpeg-static/**"
+  # yt-dlp ships as a per-platform executable that must be spawned from disk,
+  # so it cannot live inside the asar archive.
+  - "**/youtube-dl-exec/bin/**"
 publish:
   provider: github
   owner: Lucasd200

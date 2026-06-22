@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events'
-import { basename } from 'path'
-import { existsSync } from 'fs'
+import { basename, join, dirname } from 'path'
+import { existsSync, chmodSync } from 'fs'
+import type { ChildProcess } from 'child_process'
 import {
   joinVoiceChannel,
   createAudioPlayer,
@@ -13,9 +14,12 @@ import {
   type AudioPlayer
 } from '@discordjs/voice'
 import { ChannelType, type Client, type VoiceChannel } from 'discord.js'
+import { create as createYtDlp } from 'youtube-dl-exec'
 import type { Track } from '@shared/types'
 
-// ffmpeg-static gives prism-media a binary without a system install.
+// ffmpeg-static gives prism-media a binary without a system install. yt-dlp
+// streams the source container to stdout and @discordjs/voice transcodes it to
+// opus through this ffmpeg.
 try {
   // eslint-disable-next-line @typescript-eslint/no-var-requires
   const ff = require('ffmpeg-static')
@@ -28,7 +32,37 @@ interface QueueItem extends Track {
   localPath?: string
 }
 
-/** Voice connection + music/soundboard playback via @discordjs/voice + play-dl. */
+/**
+ * Resolve the bundled yt-dlp binary. In a packaged app the JS lives inside
+ * app.asar but native/executable files are unpacked next to it, so the path has
+ * to be rewritten to app.asar.unpacked or spawning fails (child_process does not
+ * go through Electron's asar shim).
+ */
+function resolveYtDlp(): string {
+  const name = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
+  let pkgDir: string
+  try {
+    pkgDir = dirname(require.resolve('youtube-dl-exec/package.json'))
+  } catch {
+    pkgDir = join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec')
+  }
+  let bin = join(pkgDir, 'bin', name)
+  // In a packaged app the JS resolves inside app.asar, but executables are
+  // unpacked alongside it (see asarUnpack in electron-builder.yml).
+  if (bin.includes('app.asar') && !bin.includes('app.asar.unpacked')) {
+    bin = bin.replace('app.asar', 'app.asar.unpacked')
+  }
+  if (process.platform !== 'win32') {
+    try {
+      chmodSync(bin, 0o755)
+    } catch {
+      /* bundle may be read-only; npm/electron-builder preserves the exec bit */
+    }
+  }
+  return bin
+}
+
+/** Voice connection + music/soundboard playback via @discordjs/voice + yt-dlp. */
 export class MusicManager extends EventEmitter {
   private client: Client
   private connection: VoiceConnection | null = null
@@ -40,10 +74,17 @@ export class MusicManager extends EventEmitter {
   private volume = 0.5
   private loop = false
   private channelName = ''
+  private ytProc: ChildProcess | null = null
+  private yt: ReturnType<typeof createYtDlp> | null = null
 
   constructor(client: Client) {
     super()
     this.client = client
+  }
+
+  private ytdlp(): ReturnType<typeof createYtDlp> {
+    if (!this.yt) this.yt = createYtDlp(resolveYtDlp())
+    return this.yt
   }
 
   private ensurePlayer(): AudioPlayer {
@@ -87,6 +128,7 @@ export class MusicManager extends EventEmitter {
   leave(): void {
     this.queue = []
     this.current = null
+    this.killProc()
     try {
       this.player?.stop(true)
       this.connection?.destroy()
@@ -98,6 +140,17 @@ export class MusicManager extends EventEmitter {
     this.emit('voiceState', { connected: false, channelName: '' })
     this.emit('nowPlaying', null)
     this.emit('queue', [])
+  }
+
+  private killProc(): void {
+    if (this.ytProc) {
+      try {
+        this.ytProc.kill('SIGKILL')
+      } catch {
+        /* ignore */
+      }
+      this.ytProc = null
+    }
   }
 
   private snapshot(): Track[] {
@@ -126,21 +179,6 @@ export class MusicManager extends EventEmitter {
     })
   }
 
-  private scInit = false
-
-  /** SoundCloud needs a free client id once per session. */
-  private async ensureSoundcloud(play: any): Promise<boolean> {
-    if (this.scInit) return true
-    try {
-      const id = await play.getFreeClientID()
-      play.setToken({ soundcloud: { client_id: id } })
-      this.scInit = true
-      return true
-    } catch {
-      return false
-    }
-  }
-
   /** Spotify has no public stream — scrape the title and find it on YouTube. */
   private async spotifyToQuery(url: string): Promise<string | null> {
     const decode = (s: string): string =>
@@ -164,42 +202,60 @@ export class MusicManager extends EventEmitter {
     }
   }
 
-  private async resolveTrack(query: string, requester: string): Promise<QueueItem | null> {
-    const play: any = await import('play-dl')
-    const q = query.trim()
+  /** Ask yt-dlp for metadata (works for a URL or a "ytsearch1:" search term). */
+  private async metaFromYtDlp(
+    target: string,
+    requester: string,
+    fallbackTitle?: string
+  ): Promise<QueueItem | null> {
+    try {
+      const raw = (await this.ytdlp()(target, {
+        dumpSingleJson: true,
+        noPlaylist: true,
+        noWarnings: true
+      })) as unknown as Record<string, unknown>
+      const info = (Array.isArray((raw as any).entries) ? (raw as any).entries[0] : raw) as
+        | Record<string, unknown>
+        | undefined
+      if (!info) return null
+      const thumbs = info.thumbnails as Array<{ url?: string }> | undefined
+      const thumb =
+        (info.thumbnail as string | undefined) ||
+        (thumbs && thumbs.length ? thumbs[thumbs.length - 1]?.url : undefined) ||
+        null
+      const url =
+        (info.webpage_url as string | undefined) ||
+        (info.original_url as string | undefined) ||
+        (/^https?:\/\//i.test(target) ? target : null)
+      const dur = info.duration
+      return {
+        title: (info.title as string) || fallbackTitle || target,
+        url,
+        duration: typeof dur === 'number' ? Math.round(dur) : null,
+        thumbnail: thumb,
+        requester,
+        local: false
+      }
+    } catch (e) {
+      const stderr = (e as { stderr?: string }).stderr
+      const msg = stderr ? String(stderr).trim().split('\n').pop() : (e as Error).message
+      this.emit('log', 'Lookup failed: ' + msg)
+      return null
+    }
+  }
 
+  private async resolveTrack(query: string, requester: string): Promise<QueueItem | null> {
+    const q = query.trim()
+    // Spotify can't be streamed directly — pull the title and search YouTube.
     if (/open\.spotify\.com/i.test(q)) {
       const term = (await this.spotifyToQuery(q)) || q
-      const results = await play.search(term, { limit: 1, source: { youtube: 'video' } })
-      if (!results.length) return null
-      const r = results[0]
-      return { title: r.title || term, url: r.url, duration: r.durationInSec || null, thumbnail: r.thumbnails?.[0]?.url || null, requester, local: false }
+      return this.metaFromYtDlp('ytsearch1:' + term, requester, term)
     }
-
-    if (/soundcloud\.com/i.test(q)) {
-      if (!(await this.ensureSoundcloud(play))) {
-        this.emit('log', 'SoundCloud is unavailable right now.')
-        return null
-      }
-      const info = await play.soundcloud(q)
-      if (info?.type && info.type !== 'track') {
-        this.emit('log', 'Only SoundCloud track links are supported.')
-        return null
-      }
-      const durSec = info.durationInSec ?? (info.durationInMs ? Math.round(info.durationInMs / 1000) : null)
-      return { title: info.name || q, url: q, duration: durSec, thumbnail: info.thumbnail || null, requester, local: false }
-    }
-
-    if (play.yt_validate(q) === 'video') {
-      const info = await play.video_basic_info(q)
-      const d = info.video_details
-      return { title: d.title || q, url: q, duration: d.durationInSec || null, thumbnail: d.thumbnails?.[0]?.url || null, requester, local: false }
-    }
-
-    const results = await play.search(q, { limit: 1, source: { youtube: 'video' } })
-    if (!results.length) return null
-    const r = results[0]
-    return { title: r.title || q, url: r.url, duration: r.durationInSec || null, thumbnail: r.thumbnails?.[0]?.url || null, requester, local: false }
+    // Any direct link (YouTube, SoundCloud, and the many other sites yt-dlp
+    // supports) is handed straight to yt-dlp.
+    if (/^https?:\/\//i.test(q)) return this.metaFromYtDlp(q, requester)
+    // Plain text -> YouTube search.
+    return this.metaFromYtDlp('ytsearch1:' + q, requester, q)
   }
 
   async enqueue(query: string, requester = 'You'): Promise<void> {
@@ -214,7 +270,7 @@ export class MusicManager extends EventEmitter {
       this.emit('log', 'Lookup error: ' + (e as Error).message)
       return
     }
-    if (!item) {
+    if (!item || !item.url) {
       this.emit('log', 'Nothing found for: ' + query)
       return
     }
@@ -249,6 +305,7 @@ export class MusicManager extends EventEmitter {
   }
 
   private async advance(): Promise<void> {
+    this.killProc()
     if (this.loop && this.current) {
       // replay current
     } else {
@@ -261,14 +318,31 @@ export class MusicManager extends EventEmitter {
       return
     }
     try {
-      let resource
+      let resource: ReturnType<typeof createAudioResource>
       if (this.current.local && this.current.localPath) {
         resource = createAudioResource(this.current.localPath, { inlineVolume: true })
       } else {
-        const play = await import('play-dl')
-        const stream = await play.stream(this.current.url!)
-        resource = createAudioResource(stream.stream, {
-          inputType: stream.type as unknown as StreamType,
+        // yt-dlp downloads the best audio to stdout; ffmpeg (via @discordjs/voice)
+        // transcodes the arbitrary container to opus.
+        const sub = this.ytdlp().exec(
+          this.current.url!,
+          {
+            output: '-',
+            format: 'bestaudio/best',
+            quiet: true,
+            noWarnings: true,
+            noPlaylist: true,
+            // Be polite to YouTube's throttling so playback doesn't stutter.
+            limitRate: '8M'
+          },
+          { stdio: ['ignore', 'pipe', 'ignore'] }
+        ) as unknown as ChildProcess & Promise<unknown>
+        // Killing the process on skip/stop makes it exit non-zero; swallow that.
+        ;(sub as unknown as Promise<unknown>).catch(() => {})
+        this.ytProc = sub
+        if (!sub.stdout) throw new Error('yt-dlp produced no audio stream')
+        resource = createAudioResource(sub.stdout, {
+          inputType: StreamType.Arbitrary,
           inlineVolume: true
         })
       }
@@ -299,6 +373,7 @@ export class MusicManager extends EventEmitter {
     this.queue = []
     this.current = null
     this.loop = false
+    this.killProc()
     this.player?.stop(true)
     this.emit('nowPlaying', null)
     this.emit('queue', [])

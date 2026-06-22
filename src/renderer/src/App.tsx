@@ -8,6 +8,7 @@ import ChatView from './components/ChatView'
 import MemberList from './components/MemberList'
 import MusicPanel from './components/MusicPanel'
 import Settings from './components/Settings'
+import ServerSettings from './components/ServerSettings'
 import Toasts from './components/Toasts'
 import ContextMenu from './components/ContextMenu'
 import ProfileCard from './components/ProfileCard'
@@ -18,6 +19,7 @@ export default function App(): JSX.Element {
   const view = useStore((s) => s.view)
   const showMembers = useStore((s) => s.showMembers)
   const showSettings = useStore((s) => s.showSettings)
+  const showServerSettings = useStore((s) => s.showServerSettings)
   const showMusic = useStore((s) => s.showMusic)
   const isDM = useStore((s) => s.isDM)
   const activeChannelId = useStore((s) => s.activeChannelId)
@@ -40,6 +42,8 @@ export default function App(): JSX.Element {
           <Login />
         ) : showSettings ? (
           <Settings />
+        ) : showServerSettings ? (
+          <ServerSettings />
         ) : (
           <div className="workspace">
             <ServerRail />

@@ -119,6 +119,28 @@ function registerIpc(): void {
   ipcMain.handle(IPC.loadMembers, () => bot.refreshMembers())
   ipcMain.handle(IPC.getProfile, (_e, id: string) => bot.getProfile(id))
 
+  // server settings & management
+  ipcMain.handle(IPC.getGuildDetail, (_e, id: string) => bot.getGuildDetail(id))
+  ipcMain.handle(IPC.createChannel, (_e, gid: string, name: string, kind: 'text' | 'voice' | 'category', parentId?: string | null) =>
+    bot.createChannel(gid, name, kind, parentId)
+  )
+  ipcMain.handle(IPC.deleteChannel, (_e, id: string) => bot.deleteChannel(id))
+  ipcMain.handle(IPC.editChannel, (_e, id: string, changes: { name?: string; topic?: string }) =>
+    bot.editChannel(id, changes)
+  )
+  ipcMain.handle(IPC.getChannelPermissions, (_e, id: string) => bot.getChannelPermissions(id))
+  ipcMain.handle(IPC.setChannelPermission, (_e, id: string, targetId: string, perm: string, value: import('@shared/types').PermValue) =>
+    bot.setChannelPermission(id, targetId, perm, value)
+  )
+  ipcMain.handle(IPC.setMemberRole, (_e, gid: string, uid: string, rid: string, add: boolean) =>
+    bot.setMemberRole(gid, uid, rid, add)
+  )
+  ipcMain.handle(IPC.kickMember, (_e, gid: string, uid: string, reason?: string) => bot.kickMember(gid, uid, reason))
+  ipcMain.handle(IPC.banMember, (_e, gid: string, uid: string, reason?: string) => bot.banMember(gid, uid, reason))
+  ipcMain.handle(IPC.timeoutMember, (_e, gid: string, uid: string, minutes: number) =>
+    bot.timeoutMember(gid, uid, minutes)
+  )
+
   ipcMain.handle(IPC.getSettings, () => loadSettings())
   ipcMain.handle(IPC.setSettings, (_e, partial: Partial<Settings>) => {
     const merged = saveSettings(partial)

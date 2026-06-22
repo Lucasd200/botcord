@@ -4,6 +4,7 @@ import {
   GatewayIntentBits,
   Partials,
   ChannelType,
+  OverwriteType,
   PermissionsBitField,
   EmbedBuilder,
   type Message,
@@ -21,7 +22,14 @@ import type {
   DMInfo,
   HistoryPayload,
   ReplyRef,
-  AttachmentFile
+  AttachmentFile,
+  GuildDetail,
+  RoleDetail,
+  ChannelDetail,
+  MemberDetail,
+  ChannelOverwrite,
+  ActionResult,
+  PermValue
 } from '@shared/types'
 import { MusicManager } from './music'
 
@@ -706,6 +714,254 @@ export class BotManager extends EventEmitter {
       }
     } catch {
       return null
+    }
+  }
+
+  // ---- server settings & management ----------------------------------------
+
+  private actionError(e: unknown): string {
+    const msg = (e as Error)?.message || String(e)
+    if (/Missing Permissions/i.test(msg)) return 'The bot is missing the permission for that action.'
+    if (/Missing Access/i.test(msg)) return 'The bot lacks access to that channel or server.'
+    if (/hierarchy|higher|highest role/i.test(msg))
+      return "The bot's role is not high enough to manage that target. Move its role up in Server Settings."
+    if (/owner/i.test(msg)) return 'You cannot perform that action on the server owner.'
+    return msg
+  }
+
+  /** Full snapshot of one guild for the Server Settings window. */
+  async getGuildDetail(guildId: string): Promise<GuildDetail | null> {
+    if (!this.client) return null
+    const guild = this.client.guilds.cache.get(guildId)
+    if (!guild) return null
+    try {
+      if (this.hasMembers) await guild.members.fetch()
+    } catch {
+      /* fall back to cache */
+    }
+    const me = guild.members.me
+    const myTopRolePos = me ? me.roles.highest.position : 0
+
+    const roles: RoleDetail[] = [...guild.roles.cache.values()]
+      .sort((a, b) => b.position - a.position)
+      .map((r) => ({
+        id: r.id,
+        name: r.name,
+        color: r.hexColor !== '#000000' ? r.hexColor : null,
+        position: r.position,
+        memberCount: r.members.size,
+        managed: r.managed,
+        hoist: r.hoist
+      }))
+
+    const channels: ChannelDetail[] = []
+    const sorted = [...guild.channels.cache.values()].sort(
+      (a, b) => ((a as any).rawPosition ?? 0) - ((b as any).rawPosition ?? 0)
+    )
+    for (const ch of sorted) {
+      let type: ChannelDetail['type'] | null
+      if (ch.type === ChannelType.GuildCategory) type = 'category'
+      else type = this.channelKind(ch.type)
+      if (!type) continue
+      channels.push({
+        id: ch.id,
+        name: ch.name,
+        type,
+        parentId: (ch as any).parentId ?? null,
+        position: (ch as any).rawPosition ?? 0
+      })
+    }
+
+    const members: MemberDetail[] = [...guild.members.cache.values()]
+      .map((m) => ({
+        id: m.id,
+        name: m.displayName,
+        username: m.user.username,
+        avatar: m.displayAvatarURL({ size: 64 }),
+        bot: m.user.bot,
+        roleIds: [...m.roles.cache.keys()].filter((id) => id !== guild.id),
+        topRolePos: m.roles.highest.position,
+        joinedAt: m.joinedTimestamp ?? null
+      }))
+      .sort((a, b) => b.topRolePos - a.topRolePos || a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
+      .slice(0, 1000)
+
+    const perms = me?.permissions
+    const has = (f: bigint): boolean => !!perms?.has(f)
+    return {
+      id: guild.id,
+      name: guild.name,
+      ownerId: guild.ownerId,
+      memberCount: guild.memberCount,
+      roles,
+      channels,
+      members,
+      caps: {
+        manageRoles: has(PermissionsBitField.Flags.ManageRoles),
+        manageChannels: has(PermissionsBitField.Flags.ManageChannels),
+        kick: has(PermissionsBitField.Flags.KickMembers),
+        ban: has(PermissionsBitField.Flags.BanMembers),
+        moderate: has(PermissionsBitField.Flags.ModerateMembers),
+        myTopRolePos,
+        isOwner: guild.ownerId === me?.id
+      }
+    }
+  }
+
+  async createChannel(
+    guildId: string,
+    name: string,
+    kind: 'text' | 'voice' | 'category',
+    parentId?: string | null
+  ): Promise<ActionResult> {
+    const guild = this.client?.guilds.cache.get(guildId)
+    if (!guild) return { ok: false, error: 'Server not found.' }
+    const clean = (name || '').trim()
+    if (!clean) return { ok: false, error: 'Give the channel a name.' }
+    const typeMap = {
+      text: ChannelType.GuildText,
+      voice: ChannelType.GuildVoice,
+      category: ChannelType.GuildCategory
+    } as const
+    try {
+      await guild.channels.create({
+        name: clean,
+        type: typeMap[kind],
+        parent: kind === 'category' ? undefined : parentId || undefined
+      })
+      this.emit('guilds', this.buildGuilds())
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async deleteChannel(channelId: string): Promise<ActionResult> {
+    const ch = this.client?.channels.cache.get(channelId) as any
+    if (!ch || typeof ch.delete !== 'function') return { ok: false, error: 'Channel not found.' }
+    try {
+      await ch.delete()
+      this.emit('guilds', this.buildGuilds())
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async editChannel(
+    channelId: string,
+    changes: { name?: string; topic?: string }
+  ): Promise<ActionResult> {
+    const ch = this.client?.channels.cache.get(channelId) as any
+    if (!ch || typeof ch.edit !== 'function') return { ok: false, error: 'Channel not found.' }
+    const opts: { name?: string; topic?: string } = {}
+    if (changes.name != null && changes.name.trim()) opts.name = changes.name.trim()
+    if (changes.topic != null) opts.topic = changes.topic
+    if (Object.keys(opts).length === 0) return { ok: false, error: 'Nothing to change.' }
+    try {
+      await ch.edit(opts)
+      this.emit('guilds', this.buildGuilds())
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async getChannelPermissions(channelId: string): Promise<ChannelOverwrite[]> {
+    const ch = this.client?.channels.cache.get(channelId) as any
+    if (!ch?.permissionOverwrites) return []
+    const guild = ch.guild as Guild | undefined
+    const out: ChannelOverwrite[] = []
+    for (const ow of ch.permissionOverwrites.cache.values()) {
+      const type: 'role' | 'member' = ow.type === OverwriteType.Role ? 'role' : 'member'
+      let name = ow.id
+      if (type === 'role') name = guild?.roles.cache.get(ow.id)?.name ?? 'unknown role'
+      else name = guild?.members.cache.get(ow.id)?.displayName ?? 'member'
+      out.push({ targetId: ow.id, type, name, allow: ow.allow.toArray(), deny: ow.deny.toArray() })
+    }
+    return out
+  }
+
+  async setChannelPermission(
+    channelId: string,
+    targetId: string,
+    perm: string,
+    value: PermValue
+  ): Promise<ActionResult> {
+    const ch = this.client?.channels.cache.get(channelId) as any
+    if (!ch?.permissionOverwrites) return { ok: false, error: 'Channel not found.' }
+    const flag = (PermissionsBitField.Flags as Record<string, bigint>)[perm]
+    if (flag === undefined) return { ok: false, error: 'Unknown permission.' }
+    const v = value === 'allow' ? true : value === 'deny' ? false : null
+    try {
+      await ch.permissionOverwrites.edit(targetId, { [perm]: v })
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  private async fetchMember(guildId: string, userId: string): Promise<GuildMember | null> {
+    const guild = this.client?.guilds.cache.get(guildId)
+    if (!guild) return null
+    return guild.members.cache.get(userId) || (await guild.members.fetch(userId).catch(() => null))
+  }
+
+  async setMemberRole(
+    guildId: string,
+    userId: string,
+    roleId: string,
+    add: boolean
+  ): Promise<ActionResult> {
+    const member = await this.fetchMember(guildId, userId)
+    if (!member) return { ok: false, error: 'Member not found.' }
+    try {
+      if (add) await member.roles.add(roleId)
+      else await member.roles.remove(roleId)
+      void this.refreshMembers()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async kickMember(guildId: string, userId: string, reason?: string): Promise<ActionResult> {
+    const member = await this.fetchMember(guildId, userId)
+    if (!member) return { ok: false, error: 'Member not found.' }
+    if (!member.kickable) return { ok: false, error: "The bot can't kick that member (role hierarchy)." }
+    try {
+      await member.kick(reason || undefined)
+      void this.refreshMembers()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async banMember(guildId: string, userId: string, reason?: string): Promise<ActionResult> {
+    const guild = this.client?.guilds.cache.get(guildId)
+    if (!guild) return { ok: false, error: 'Server not found.' }
+    try {
+      await guild.members.ban(userId, { reason: reason || undefined })
+      void this.refreshMembers()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  /** minutes <= 0 clears the timeout. */
+  async timeoutMember(guildId: string, userId: string, minutes: number): Promise<ActionResult> {
+    const member = await this.fetchMember(guildId, userId)
+    if (!member) return { ok: false, error: 'Member not found.' }
+    if (!member.moderatable)
+      return { ok: false, error: "The bot can't time out that member (role hierarchy)." }
+    try {
+      await member.timeout(minutes > 0 ? Math.min(minutes, 40320) * 60 * 1000 : null)
+      void this.refreshMembers()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
     }
   }
 

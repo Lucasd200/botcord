@@ -157,6 +157,76 @@ export interface ProfileData {
   joinedAt: number | null
 }
 
+// ---- server settings & management ----------------------------------------
+
+export interface RoleDetail {
+  id: string
+  name: string
+  color: string | null
+  position: number
+  memberCount: number
+  managed: boolean
+  hoist: boolean
+}
+
+export interface ChannelDetail {
+  id: string
+  name: string
+  /** 'category' is included here (unlike the sidebar ChannelInfo). */
+  type: ChannelInfo['type'] | 'category'
+  parentId: string | null
+  position: number
+}
+
+export interface MemberDetail {
+  id: string
+  name: string
+  username: string
+  avatar: string | null
+  bot: boolean
+  roleIds: string[]
+  topRolePos: number
+  joinedAt: number | null
+}
+
+/** What the logged-in bot is actually allowed to do in this guild. */
+export interface GuildCaps {
+  manageRoles: boolean
+  manageChannels: boolean
+  kick: boolean
+  ban: boolean
+  moderate: boolean
+  myTopRolePos: number
+  isOwner: boolean
+}
+
+export interface GuildDetail {
+  id: string
+  name: string
+  ownerId: string
+  memberCount: number
+  roles: RoleDetail[]
+  channels: ChannelDetail[]
+  members: MemberDetail[]
+  caps: GuildCaps
+}
+
+/** A single permission overwrite on a channel, with flags as discord.js names. */
+export interface ChannelOverwrite {
+  targetId: string
+  type: 'role' | 'member'
+  name: string
+  allow: string[]
+  deny: string[]
+}
+
+export type PermValue = 'allow' | 'deny' | 'neutral'
+
+export interface ActionResult {
+  ok: boolean
+  error?: string
+}
+
 export interface HistoryPayload {
   channelId: string
   messages: MessageData[]
@@ -243,6 +313,17 @@ export const IPC = {
   setPresence: 'bot:setPresence',
   loadMembers: 'bot:loadMembers',
   getProfile: 'bot:getProfile',
+  // server settings & management
+  getGuildDetail: 'guild:detail',
+  createChannel: 'guild:createChannel',
+  deleteChannel: 'guild:deleteChannel',
+  editChannel: 'guild:editChannel',
+  getChannelPermissions: 'guild:getChannelPermissions',
+  setChannelPermission: 'guild:setChannelPermission',
+  setMemberRole: 'guild:setMemberRole',
+  kickMember: 'guild:kickMember',
+  banMember: 'guild:banMember',
+  timeoutMember: 'guild:timeoutMember',
   pickFile: 'dialog:pickFile',
   pickAudioFile: 'dialog:pickAudioFile',
   // voice + music
