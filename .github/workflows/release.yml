@@ -32,11 +32,27 @@ jobs:
       - name: Install dependencies
         run: npm ci
         env:
-          # macOS must bundle the self-contained yt-dlp_macos binary. The default
-          # "yt-dlp" asset youtube-dl-exec grabs is a Python zipapp that needs a
-          # system Python 3 (absent on most Macs) — that's why music failed on
-          # macOS. Windows keeps the default (which resolves to yt-dlp.exe).
-          YOUTUBE_DL_FILENAME: ${{ matrix.os == 'macos-latest' && 'yt-dlp_macos' || 'yt-dlp' }}
+          # Skip youtube-dl-exec's postinstall download. Its downloader always
+          # calls the unauthenticated GitHub REST API (and ignores tokens due to
+          # a bug), so it gets rate-limited on shared CI runners. We fetch the
+          # binary straight from the release CDN in the next step instead.
+          YOUTUBE_DL_SKIP_DOWNLOAD: 'true'
+
+      # macOS must bundle the self-contained yt-dlp_macos binary (the default
+      # "yt-dlp" asset is a Python zipapp needing system Python 3, absent on most
+      # Macs). Windows gets yt-dlp.exe. The release "latest/download" URL is a
+      # CDN redirect, not the rate-limited REST API.
+      - name: Fetch yt-dlp binary
+        shell: bash
+        run: |
+          BIN_DIR="node_modules/youtube-dl-exec/bin"
+          mkdir -p "$BIN_DIR"
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            curl -fL --retry 3 -o "$BIN_DIR/yt-dlp.exe" https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp.exe
+          else
+            curl -fL --retry 3 -o "$BIN_DIR/yt-dlp_macos" https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp_macos
+            chmod +x "$BIN_DIR/yt-dlp_macos"
+          fi
 
       # @discordjs/voice pulls in @snazzah/davey, a NAPI module whose native
       # binding ships as a per-platform optional dependency. `npm ci` only
