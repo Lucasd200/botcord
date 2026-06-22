@@ -109,6 +109,7 @@ function registerIpc(): void {
   ipcMain.handle(IPC.openDM, (_e, id: string) => bot.openDM(id))
   ipcMain.handle(IPC.sendText, (_e, text: string) => bot.sendText(text))
   ipcMain.handle(IPC.sendFile, (_e, path: string, text: string) => bot.sendFile(path, text))
+  ipcMain.handle(IPC.sendEmbed, (_e, data) => bot.sendEmbed(data))
   ipcMain.handle(IPC.reply, (_e, id: string, text: string) => bot.reply(id, text))
   ipcMain.handle(IPC.editMessage, (_e, id: string, text: string) => bot.editMessage(id, text))
   ipcMain.handle(IPC.deleteMessage, (_e, id: string) => bot.deleteMessage(id))

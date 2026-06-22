@@ -60,6 +60,7 @@ interface State {
   showMembers: boolean
   showSettings: boolean
   showMusic: boolean
+  showEmbed: boolean
   typingUser: string | null
 
   voice: VoiceStatus
@@ -92,6 +93,7 @@ interface State {
   toggleMembers: () => void
   setShowSettings: (v: boolean) => void
   setShowMusic: (v: boolean) => void
+  setShowEmbed: (v: boolean) => void
   toggleCollapsed: (key: string) => void
   setReplyTarget: (m: MessageData | null) => void
   setEditing: (id: string | null) => void
@@ -132,6 +134,7 @@ export const useStore = create<State>((set, get) => ({
   showMembers: true,
   showSettings: false,
   showMusic: false,
+  showEmbed: false,
   typingUser: null,
   voice: { connected: false, channelName: '' },
   nowPlaying: null,
@@ -328,6 +331,7 @@ export const useStore = create<State>((set, get) => ({
   toggleMembers: () => set((s) => ({ showMembers: !s.showMembers })),
   setShowSettings: (v) => set({ showSettings: v }),
   setShowMusic: (v) => set({ showMusic: v }),
+  setShowEmbed: (v) => set({ showEmbed: v }),
   toggleCollapsed: (key) => set((s) => ({ collapsed: { ...s.collapsed, [key]: !s.collapsed[key] } })),
   setReplyTarget: (m) => set({ replyTarget: m, editingId: null }),
   setEditing: (id) => set({ editingId: id, replyTarget: null }),

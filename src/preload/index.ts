@@ -19,6 +19,7 @@ const api = {
   openDM: (id: string) => ipcRenderer.invoke(IPC.openDM, id),
   sendText: (text: string) => ipcRenderer.invoke(IPC.sendText, text),
   sendFile: (path: string, text: string) => ipcRenderer.invoke(IPC.sendFile, path, text),
+  sendEmbed: (data: import('@shared/types').EmbedData) => ipcRenderer.invoke(IPC.sendEmbed, data),
   reply: (id: string, text: string) => ipcRenderer.invoke(IPC.reply, id, text),
   editMessage: (id: string, text: string) => ipcRenderer.invoke(IPC.editMessage, id, text),
   deleteMessage: (id: string) => ipcRenderer.invoke(IPC.deleteMessage, id),

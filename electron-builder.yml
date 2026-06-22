@@ -37,15 +37,30 @@ nsis:
   uninstallerIcon: build/icon.ico
 mac:
   category: public.app-category.social-networking
-  # ZIP only: it's what electron-updater uses for mac auto-update and it avoids
-  # the flaky dmg-builder/hdiutil step that hangs/fails on GitHub macOS runners.
+  # zip drives electron-updater (always built in CI). dmg is the nice download
+  # — built best-effort in CI and reliably by `npm run dist:mac` on a real Mac.
+  # ffmpeg ships inside the .app via ffmpeg-static, so music works from the dmg.
   target:
     - target: zip
       arch:
         - x64
         - arm64
+    - target: dmg
+      arch:
+        - x64
+        - arm64
   icon: build/icon.png
   artifactName: ${productName}-${version}-${arch}.${ext}
+dmg:
+  title: Botcord ${version}
+  artifactName: ${productName}-${version}-${arch}.${ext}
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications
 linux:
   target:
     - AppImage

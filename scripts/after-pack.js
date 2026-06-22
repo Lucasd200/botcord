@@ -19,12 +19,41 @@
 
 const { execFileSync } = require('child_process')
 const path = require('path')
+const fs = require('fs')
+
+// The cross-arch @snazzah/davey native binding we add for the x64 zip would
+// otherwise also get packed into the arm64 build (and vice-versa). A foreign-
+// arch Mach-O makes macOS warn "this app includes an Intel component". Remove
+// the binding that doesn't match the arch we're packing, BEFORE signing.
+function pruneCrossArch(dir, wrongSuffix) {
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
+    if (!entry.isDirectory()) continue
+    if (entry.name === `davey-darwin-${wrongSuffix}`) {
+      fs.rmSync(full, { recursive: true, force: true })
+      console.log(`[after-pack] removed cross-arch binding ${full}`)
+    } else {
+      pruneCrossArch(full, wrongSuffix)
+    }
+  }
+}
 
 exports.default = async function afterPack(context) {
   if (context.electronPlatformName !== 'darwin') return
 
   const appName = `${context.packager.appInfo.productFilename}.app`
   const appPath = path.join(context.appOutDir, appName)
+
+  // arch enum: x64 = 1, arm64 = 3
+  const wrong = context.arch === 1 ? 'arm64' : context.arch === 3 ? 'x64' : null
+  if (wrong) {
+    const resources = path.join(appPath, 'Contents', 'Resources')
+    try {
+      if (fs.existsSync(resources)) pruneCrossArch(resources, wrong)
+    } catch (e) {
+      console.log('[after-pack] prune skipped:', e.message)
+    }
+  }
 
   console.log(`[after-pack] ad-hoc signing ${appPath}`)
   execFileSync('codesign', ['--force', '--deep', '--sign', '-', appPath], {

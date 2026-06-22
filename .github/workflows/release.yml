@@ -62,8 +62,18 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish macOS installer
+      # The zip is what electron-updater uses, so it must always succeed.
+      - name: Publish macOS zips (auto-update)
         if: matrix.os == 'macos-latest'
-        run: npx electron-builder --mac --publish always
+        run: npx electron-builder --mac zip --x64 --arm64 --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # dmg-builder can fail on GitHub's macOS runners (hdiutil/mac_alias bug);
+      # build the DMGs best-effort so a failure here doesn't break the release.
+      - name: Publish macOS DMGs (best effort)
+        if: matrix.os == 'macos-latest'
+        continue-on-error: true
+        run: npx electron-builder --mac dmg --x64 --arm64 --publish always
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

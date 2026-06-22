@@ -26,6 +26,7 @@ export default function MessageInput(): JSX.Element {
   const setReplyTarget = useStore((s) => s.setReplyTarget)
   const setEditing = useStore((s) => s.setEditing)
   const sendMessage = useStore((s) => s.sendMessage)
+  const setShowEmbed = useStore((s) => s.setShowEmbed)
   const pushToast = useStore((s) => s.pushToast)
   const mentionRequest = useStore((s) => s.mentionRequest)
   const mentionTargetId = useStore((s) => s.mentionTargetId)
@@ -241,6 +242,9 @@ export default function MessageInput(): JSX.Element {
               ))}
             </div>
           )}
+          <button className="composer-emoji" title="Embed builder" onClick={() => setShowEmbed(true)}>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm1 4v2h8V7H6Zm0 4v2h12v-2H6Zm0 4v2h9v-2H6Z" /><rect x="3" y="3" width="3" height="18" fill="var(--accent)" /></svg>
+          </button>
           <button className="composer-emoji" title="Emoji" onClick={() => setShowEmoji((v) => !v)}>
             <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-3.5 7a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 17.5c-2.3 0-4.3-1.4-5-3.5h10c-.7 2.1-2.7 3.5-5 3.5Z" /></svg>
           </button>

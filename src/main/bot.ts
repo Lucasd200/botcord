@@ -5,11 +5,13 @@ import {
   Partials,
   ChannelType,
   PermissionsBitField,
+  EmbedBuilder,
   type Message,
   type Guild,
   type TextBasedChannel,
   type GuildMember
 } from 'discord.js'
+import type { EmbedData } from '@shared/types'
 import type {
   GuildInfo,
   CategoryInfo,
@@ -547,6 +549,48 @@ export class BotManager extends EventEmitter {
       await ch.send({ content: text || undefined, files: [path] })
     } catch (e) {
       this.emit('log', 'File send failed: ' + (e as Error).message)
+    }
+  }
+
+  async sendEmbed(data: EmbedData): Promise<void> {
+    const ch = this.activeChannel() as any
+    if (!ch) {
+      this.emit('log', 'No active channel.')
+      return
+    }
+    try {
+      const embed = new EmbedBuilder()
+      if (data.title) embed.setTitle(data.title.slice(0, 256))
+      if (data.description) embed.setDescription(data.description.slice(0, 4096))
+      if (data.url) embed.setURL(data.url)
+      if (data.color) embed.setColor(parseInt(data.color.replace('#', ''), 16))
+      if (data.authorName)
+        embed.setAuthor({
+          name: data.authorName.slice(0, 256),
+          iconURL: data.authorIcon || undefined,
+          url: data.authorUrl || undefined
+        })
+      if (data.footerText)
+        embed.setFooter({ text: data.footerText.slice(0, 2048), iconURL: data.footerIcon || undefined })
+      if (data.image) embed.setImage(data.image)
+      if (data.thumbnail) embed.setThumbnail(data.thumbnail)
+      if (data.timestamp) embed.setTimestamp()
+      const fields = data.fields
+        .filter((f) => f.name.trim() && f.value.trim())
+        .slice(0, 25)
+        .map((f) => ({ name: f.name.slice(0, 256), value: f.value.slice(0, 1024), inline: f.inline }))
+      if (fields.length) embed.addFields(fields)
+
+      const hasContent =
+        data.title || data.description || data.authorName || data.footerText || data.image || fields.length
+      if (!hasContent && !data.content) {
+        this.emit('log', 'Add some content to the embed first.')
+        return
+      }
+      await ch.send({ content: data.content || undefined, embeds: hasContent ? [embed] : [] })
+      this.emit('log', 'Embed sent.')
+    } catch (e) {
+      this.emit('log', 'Embed failed: ' + (e as Error).message)
     }
   }
 

@@ -194,6 +194,29 @@ export interface NowPlaying {
   loop: boolean
 }
 
+export interface EmbedField {
+  name: string
+  value: string
+  inline: boolean
+}
+
+export interface EmbedData {
+  title: string
+  description: string
+  url: string
+  color: string
+  authorName: string
+  authorIcon: string
+  authorUrl: string
+  footerText: string
+  footerIcon: string
+  image: string
+  thumbnail: string
+  timestamp: boolean
+  content: string
+  fields: EmbedField[]
+}
+
 export interface UpdateInfo {
   version: string
 }
@@ -211,6 +234,7 @@ export const IPC = {
   openDM: 'bot:openDM',
   sendText: 'bot:sendText',
   sendFile: 'bot:sendFile',
+  sendEmbed: 'bot:sendEmbed',
   reply: 'bot:reply',
   deleteMessage: 'bot:deleteMessage',
   editMessage: 'bot:editMessage',
