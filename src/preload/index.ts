@@ -28,6 +28,20 @@ const api = {
   setPresence: (status: string, activity: string) => ipcRenderer.invoke(IPC.setPresence, status, activity),
   loadMembers: () => ipcRenderer.invoke(IPC.loadMembers),
   getProfile: (id: string) => ipcRenderer.invoke(IPC.getProfile, id),
+  getEmojis: (): Promise<import('@shared/types').EmojiInfo[]> => ipcRenderer.invoke(IPC.getEmojis),
+  getBotProfile: (): Promise<import('@shared/types').BotProfile | null> =>
+    ipcRenderer.invoke(IPC.getBotProfile),
+  editBotProfile: (changes: {
+    username?: string
+    description?: string
+    avatarPath?: string
+  }): Promise<import('@shared/types').ActionResult> => ipcRenderer.invoke(IPC.editBotProfile, changes),
+  getPins: (id: string): Promise<import('@shared/types').MessageData[]> =>
+    ipcRenderer.invoke(IPC.getPins, id),
+  pinMessage: (id: string): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.pinMessage, id),
+  unpinMessage: (id: string): Promise<import('@shared/types').ActionResult> =>
+    ipcRenderer.invoke(IPC.unpinMessage, id),
 
   // server settings & management
   getGuildDetail: (id: string): Promise<import('@shared/types').GuildDetail | null> =>

@@ -406,7 +406,7 @@ function Channels({ act }: { act: (p: Promise<ActionResult>, ok: string) => Prom
   )
 }
 
-function glyph(type: ChannelDetail['type']): string {
+export function glyph(type: ChannelDetail['type']): string {
   if (type === 'voice' || type === 'stage') return '🔊'
   if (type === 'category') return '▾'
   if (type === 'announcement') return '📣'
@@ -414,12 +414,14 @@ function glyph(type: ChannelDetail['type']): string {
   return '#'
 }
 
-function ChannelManage({
+export function ChannelManage({
   channel,
-  act
+  act,
+  onDeleted
 }: {
   channel: ChannelDetail
   act: (p: Promise<ActionResult>, ok: string) => Promise<boolean>
+  onDeleted?: () => void
 }): JSX.Element {
   const detail = useStore((s) => s.serverDetail)!
   const caps = detail.caps
@@ -543,9 +545,11 @@ function ChannelManage({
       <button
         className="btn-danger"
         disabled={!caps.manageChannels}
-        onClick={() => {
-          if (confirm(`Delete #${channel.name}? This cannot be undone.`))
-            act(api.deleteChannel(channel.id), 'Channel deleted.')
+        onClick={async () => {
+          if (confirm(`Delete #${channel.name}? This cannot be undone.`)) {
+            const ok = await act(api.deleteChannel(channel.id), 'Channel deleted.')
+            if (ok) onDeleted?.()
+          }
         }}
       >
         Delete channel

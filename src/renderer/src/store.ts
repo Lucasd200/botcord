@@ -13,7 +13,9 @@ import type {
   NowPlaying,
   VoiceStatus,
   ProfileData,
-  GuildDetail
+  GuildDetail,
+  EmojiInfo,
+  BotProfile
 } from '@shared/types'
 
 export interface ContextMenuState {
@@ -27,6 +29,9 @@ export interface UpdateState {
   available: boolean
   downloaded: boolean
   version: string
+  percent: number
+  transferred: number
+  total: number
 }
 
 export interface Toast {
@@ -65,6 +70,15 @@ interface State {
   showServerSettings: boolean
   serverDetail: GuildDetail | null
   serverDetailLoading: boolean
+  channelSettingsId: string | null
+  customEmojis: EmojiInfo[]
+  showSelfProfile: boolean
+  showEditProfile: boolean
+  botProfile: BotProfile | null
+  showPins: boolean
+  pins: MessageData[]
+  channelMenu: { x: number; y: number; channelId: string; channelName: string; isVoice: boolean } | null
+  jumpTarget: string | null
   typingUser: string | null
 
   voice: VoiceStatus
@@ -101,6 +115,22 @@ interface State {
   openServerSettings: () => Promise<void>
   closeServerSettings: () => void
   reloadServerDetail: () => Promise<void>
+  openChannelSettings: (channelId: string) => Promise<void>
+  closeChannelSettings: () => void
+  openSelfProfile: () => void
+  closeSelfProfile: () => void
+  switchAccount: (token: string) => Promise<void>
+  addAccount: () => Promise<void>
+  removeAccount: (id: string) => Promise<void>
+  openEditProfile: () => Promise<void>
+  closeEditProfile: () => void
+  togglePins: () => Promise<void>
+  closePins: () => void
+  openChannelMenu: (x: number, y: number, channelId: string, channelName: string, isVoice: boolean) => void
+  closeChannelMenu: () => void
+  toggleMuteChannel: (id: string) => Promise<void>
+  markChannelRead: (id: string) => void
+  jumpToMessage: (id: string) => void
   toggleCollapsed: (key: string) => void
   setReplyTarget: (m: MessageData | null) => void
   setEditing: (id: string | null) => void
@@ -117,6 +147,8 @@ interface State {
 let toastSeq = 1
 let typingTimer: ReturnType<typeof setTimeout> | null = null
 let initialized = false
+let activeToken = '' // token of the currently connected bot, for the account list
+let jumpTimer: ReturnType<typeof setTimeout> | null = null
 const MAX_MESSAGES = 500
 
 export const useStore = create<State>((set, get) => ({
@@ -145,11 +177,20 @@ export const useStore = create<State>((set, get) => ({
   showServerSettings: false,
   serverDetail: null,
   serverDetailLoading: false,
+  channelSettingsId: null,
+  customEmojis: [],
+  showSelfProfile: false,
+  showEditProfile: false,
+  botProfile: null,
+  showPins: false,
+  pins: [],
+  channelMenu: null,
+  jumpTarget: null,
   typingUser: null,
   voice: { connected: false, channelName: '' },
   nowPlaying: null,
   queue: [],
-  update: { available: false, downloaded: false, version: '' },
+  update: { available: false, downloaded: false, version: '', percent: 0, transferred: 0, total: 0 },
   contextMenu: null,
   windowFocused: true,
   unread: {},
@@ -177,6 +218,14 @@ export const useStore = create<State>((set, get) => ({
     // ---- wire up main-process events ----
     api.onReady((u: BotUser) => {
       set({ user: u, view: 'app', connecting: false, loginError: '' })
+      api.getEmojis().then((e: EmojiInfo[]) => set({ customEmojis: e })).catch(() => {})
+      // Remember this bot in the account switcher (token stored encrypted).
+      if (activeToken) {
+        const acc = { id: u.id, name: u.name, avatar: u.avatar || '', token: activeToken }
+        const list = [acc, ...(get().settings.accounts || []).filter((a) => a.id !== u.id)]
+        api.setSettings({ accounts: list })
+        set((s) => ({ settings: { ...s.settings, accounts: list } }))
+      }
     })
     api.onGuilds((g: GuildInfo[]) => set({ guilds: g }))
     api.onDMs((d: DMInfo[]) => set({ dms: d }))
@@ -216,15 +265,18 @@ export const useStore = create<State>((set, get) => ({
         }
       } else if (!m.isSelf) {
         // General unread (bold) for any message; red ping badge only for real
-        // mentions, and never while notifications are off.
-        const muted = s.settings.notificationMode === 'none'
-        set({
-          unread: { ...s.unread, [m.channelId]: (s.unread[m.channelId] || 0) + 1 },
-          unreadMentions:
-            m.directPing && !muted
-              ? { ...s.unreadMentions, [m.channelId]: (s.unreadMentions[m.channelId] || 0) + 1 }
-              : s.unreadMentions
-        })
+        // mentions, and never while notifications are off or the channel is muted.
+        const notifOff = s.settings.notificationMode === 'none'
+        const chMuted = (s.settings.mutedChannels || []).includes(m.channelId)
+        if (!chMuted) {
+          set({
+            unread: { ...s.unread, [m.channelId]: (s.unread[m.channelId] || 0) + 1 },
+            unreadMentions:
+              m.directPing && !notifOff
+                ? { ...s.unreadMentions, [m.channelId]: (s.unreadMentions[m.channelId] || 0) + 1 }
+                : s.unreadMentions
+          })
+        }
       }
       maybeNotify(m, s)
     })
@@ -257,19 +309,25 @@ export const useStore = create<State>((set, get) => ({
     api.onUpdateAvailable(({ version }: { version: string }) =>
       set((s) => ({ update: { ...s.update, available: true, version } }))
     )
+    api.onUpdateProgress(
+      ({ percent, transferred, total }: { percent: number; transferred: number; total: number }) =>
+        set((s) => ({ update: { ...s.update, available: true, percent, transferred, total } }))
+    )
     api.onUpdateDownloaded(({ version }: { version: string }) => {
-      set({ update: { available: true, downloaded: true, version } })
+      set((s) => ({ update: { ...s.update, available: true, downloaded: true, version, percent: 100 } }))
       get().pushToast(`Update ${version} ready — click the button up top to install`, 'success')
     })
 
     // auto-login
     if (settings.keepLoggedIn && settings.savedToken) {
+      activeToken = settings.savedToken
       get().login(settings.savedToken, true)
     }
   },
 
   login: async (token, keep) => {
     set({ connecting: true, loginError: '' })
+    activeToken = token
     const res = await api.login(token)
     if (res.ok) {
       await api.setSettings({ keepLoggedIn: keep, savedToken: keep ? token : '' })
@@ -280,6 +338,7 @@ export const useStore = create<State>((set, get) => ({
   },
 
   logout: async () => {
+    activeToken = ''
     await api.logout()
     await api.setSettings({ keepLoggedIn: false, savedToken: '' })
     set((s) => ({
@@ -360,6 +419,134 @@ export const useStore = create<State>((set, get) => ({
     const detail = await api.getGuildDetail(gid)
     if (detail) set({ serverDetail: detail })
   },
+  openChannelSettings: async (channelId) => {
+    const gid = get().activeGuildId
+    if (!gid) return
+    set({ channelSettingsId: channelId })
+    const existing = get().serverDetail
+    if (!existing || existing.id !== gid) {
+      const detail = await api.getGuildDetail(gid)
+      if (detail) set({ serverDetail: detail })
+      else {
+        set({ channelSettingsId: null })
+        get().pushToast('Could not load channel settings.', 'error')
+      }
+    }
+  },
+  closeChannelSettings: () => set({ channelSettingsId: null }),
+
+  openSelfProfile: () => set({ showSelfProfile: true }),
+  closeSelfProfile: () => set({ showSelfProfile: false }),
+
+  switchAccount: async (token) => {
+    if (token === activeToken) {
+      set({ showSelfProfile: false })
+      return
+    }
+    set({ connecting: true, showSelfProfile: false })
+    await api.logout()
+    set({
+      guilds: [],
+      dms: [],
+      messages: [],
+      members: [],
+      activeGuildId: null,
+      activeChannelId: null,
+      unread: {},
+      unreadMentions: {},
+      voice: { connected: false, channelName: '' },
+      nowPlaying: null,
+      queue: []
+    })
+    activeToken = token
+    const res = await api.login(token)
+    if (res.ok) {
+      await api.setSettings({ keepLoggedIn: true, savedToken: token })
+      set((s) => ({ settings: { ...s.settings, keepLoggedIn: true, savedToken: token } }))
+    } else {
+      set({ connecting: false })
+      get().pushToast('Could not switch: ' + (res.error || 'login failed'), 'error')
+    }
+  },
+
+  addAccount: async () => {
+    await api.logout()
+    activeToken = ''
+    set({
+      showSelfProfile: false,
+      view: 'login',
+      user: null,
+      guilds: [],
+      dms: [],
+      messages: [],
+      members: [],
+      activeGuildId: null,
+      activeChannelId: null
+    })
+  },
+
+  removeAccount: async (id) => {
+    const list = (get().settings.accounts || []).filter((a) => a.id !== id)
+    await api.setSettings({ accounts: list })
+    set((s) => ({ settings: { ...s.settings, accounts: list } }))
+  },
+
+  openEditProfile: async () => {
+    set({ showEditProfile: true, showSelfProfile: false, botProfile: null })
+    const p = await api.getBotProfile()
+    if (p) set({ botProfile: p })
+  },
+  closeEditProfile: () => set({ showEditProfile: false }),
+
+  togglePins: async () => {
+    if (get().showPins) {
+      set({ showPins: false })
+      return
+    }
+    const id = get().activeChannelId
+    if (!id) return
+    set({ showPins: true, pins: [] })
+    const pins = await api.getPins(id)
+    set({ pins })
+  },
+  closePins: () => set({ showPins: false }),
+
+  openChannelMenu: (x, y, channelId, channelName, isVoice) =>
+    set({ channelMenu: { x, y, channelId, channelName, isVoice } }),
+  closeChannelMenu: () => set({ channelMenu: null }),
+
+  toggleMuteChannel: async (id) => {
+    const muted = get().settings.mutedChannels || []
+    const next = muted.includes(id) ? muted.filter((c) => c !== id) : [...muted, id]
+    await api.setSettings({ mutedChannels: next })
+    set((s) => ({
+      settings: { ...s.settings, mutedChannels: next },
+      // clear any pending badge when muting
+      unread: { ...s.unread, [id]: 0 },
+      unreadMentions: { ...s.unreadMentions, [id]: 0 }
+    }))
+  },
+
+  markChannelRead: (id) =>
+    set((s) => ({
+      unread: { ...s.unread, [id]: 0 },
+      unreadMentions: { ...s.unreadMentions, [id]: 0 }
+    })),
+
+  jumpToMessage: (id) => {
+    set({ showPins: false })
+    requestAnimationFrame(() => {
+      const el = document.getElementById('msg-' + id)
+      if (!el) {
+        get().pushToast('That message is older than the loaded history.', 'info')
+        return
+      }
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+      set({ jumpTarget: id })
+      if (jumpTimer) clearTimeout(jumpTimer)
+      jumpTimer = setTimeout(() => set({ jumpTarget: null }), 2200)
+    })
+  },
   toggleCollapsed: (key) => set((s) => ({ collapsed: { ...s.collapsed, [key]: !s.collapsed[key] } })),
   setReplyTarget: (m) => set({ replyTarget: m, editingId: null }),
   setEditing: (id) => set({ editingId: id, replyTarget: null }),
@@ -392,6 +579,7 @@ function maybeNotify(m: MessageData, s: State): void {
   const st = useStore.getState()
   const mode = st.settings.notificationMode
   if (mode === 'none') return
+  if ((st.settings.mutedChannels || []).includes(m.channelId)) return
   // "Only @mentions & DMs" uses directPing (excludes @everyone/@here spam).
   if (mode === 'pings' && !m.directPing) return
   // Never notify for the channel you're actively reading while focused.

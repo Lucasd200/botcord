@@ -204,6 +204,16 @@ export default function Settings(): JSX.Element {
               onChange={(e) => apply({ historyLimit: Number(e.target.value) })}
               className="settings-range"
             />
+            <h4 className="settings-label">Tenor API key (for GIFs)</h4>
+            <input
+              className="settings-input"
+              placeholder="Leave blank to use the built-in default"
+              value={settings.tenorApiKey || ''}
+              onChange={(e) => apply({ tenorApiKey: e.target.value.trim() })}
+            />
+            <p className="settings-hint">
+              Optional. Get a free key from Google Cloud (Tenor API) if the built-in one is rate-limited.
+            </p>
             <div className="advanced-actions">
               <button className="btn-secondary" onClick={() => api.openDataFolder()}>Open data folder</button>
             </div>

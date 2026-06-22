@@ -2,9 +2,21 @@
 
 export type NotificationMode = 'all' | 'pings' | 'none'
 
+/** A saved bot login, so users can switch bots without re-entering tokens. */
+export interface BotAccount {
+  id: string
+  name: string
+  avatar: string
+  token: string
+}
+
 export interface Settings {
   keepLoggedIn: boolean
   savedToken: string
+  /** Saved bot logins for the account switcher (tokens stored encrypted). */
+  accounts: BotAccount[]
+  /** Channel ids the user muted (no unread badge / no notifications). */
+  mutedChannels: string[]
   theme: string // 'dark' | 'light' | 'ash' | 'onyx' | 'sync'
   colorTheme: string // '' | a COLOR_THEMES name | 'custom:#RRGGBB'
   accent: string
@@ -18,6 +30,8 @@ export interface Settings {
   presenceStatus: string
   presenceActivity: string
   spellcheck: boolean
+  /** Optional Tenor API key; blank uses the built-in default. */
+  tenorApiKey: string
 }
 
 export interface VoiceMember {
@@ -90,6 +104,7 @@ export interface MessageData {
   mentionsMe: boolean
   /** A real ping for notifications: DM, direct @mention or role mention — excludes @everyone/@here. */
   directPing: boolean
+  pinned: boolean
   reactions: Reaction[]
   /** Resolves <@id>/<@&id>/<#id> tokens in content to readable names. */
   mentions: MessageMentions
@@ -222,6 +237,22 @@ export interface ChannelOverwrite {
 
 export type PermValue = 'allow' | 'deny' | 'neutral'
 
+/** The logged-in bot's editable profile fields. */
+export interface BotProfile {
+  username: string
+  description: string
+  avatar: string | null
+}
+
+/** A custom emoji from one of the bot's guilds, for the ":" autocomplete. */
+export interface EmojiInfo {
+  name: string
+  id: string
+  animated: boolean
+  url: string
+  guild: string
+}
+
 export interface ActionResult {
   ok: boolean
   error?: string
@@ -293,6 +324,9 @@ export interface UpdateInfo {
 
 export interface UpdateProgress {
   percent: number
+  transferred: number
+  total: number
+  bytesPerSecond: number
 }
 
 /** Channel names used by the IPC bridge (main <-> renderer). */
@@ -313,6 +347,12 @@ export const IPC = {
   setPresence: 'bot:setPresence',
   loadMembers: 'bot:loadMembers',
   getProfile: 'bot:getProfile',
+  getEmojis: 'bot:getEmojis',
+  getBotProfile: 'bot:getBotProfile',
+  editBotProfile: 'bot:editBotProfile',
+  getPins: 'bot:getPins',
+  pinMessage: 'bot:pinMessage',
+  unpinMessage: 'bot:unpinMessage',
   // server settings & management
   getGuildDetail: 'guild:detail',
   createChannel: 'guild:createChannel',

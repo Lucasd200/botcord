@@ -11,8 +11,11 @@ import Settings from './components/Settings'
 import ServerSettings from './components/ServerSettings'
 import Toasts from './components/Toasts'
 import ContextMenu from './components/ContextMenu'
+import ChannelContextMenu from './components/ChannelContextMenu'
 import ProfileCard from './components/ProfileCard'
 import EmbedBuilder from './components/EmbedBuilder'
+import ChannelSettings from './components/ChannelSettings'
+import EditBotProfile from './components/EditBotProfile'
 
 export default function App(): JSX.Element {
   const ready = useStore((s) => s.ready)
@@ -60,8 +63,11 @@ export default function App(): JSX.Element {
         )}
       </div>
       <ContextMenu />
+      <ChannelContextMenu />
       <ProfileCard />
       <EmbedBuilder />
+      <ChannelSettings />
+      <EditBotProfile />
       <Toasts />
     </div>
   )

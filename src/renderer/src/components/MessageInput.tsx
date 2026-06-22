@@ -2,6 +2,8 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import GifPicker from './GifPicker'
+import { UNICODE_EMOJI } from '../emojiShortcodes'
 
 const EMOJI = ['😀', '😂', '🥰', '😎', '🤔', '👍', '🙏', '🎉', '🔥', '❤️', '✨', '👀', '😭', '💀', '🤖', '✅']
 
@@ -11,6 +13,13 @@ interface MentionItem {
   name: string
   avatar: string | null
   color: string | null
+}
+
+interface EmojiItem {
+  name: string
+  char: string | null
+  url: string | null
+  insert: string
 }
 
 export default function MessageInput(): JSX.Element {
@@ -30,10 +39,14 @@ export default function MessageInput(): JSX.Element {
   const pushToast = useStore((s) => s.pushToast)
   const mentionRequest = useStore((s) => s.mentionRequest)
   const mentionTargetId = useStore((s) => s.mentionTargetId)
+  const customEmojis = useStore((s) => s.customEmojis)
   const [text, setText] = useState('')
   const [showEmoji, setShowEmoji] = useState(false)
+  const [showGif, setShowGif] = useState(false)
   const [mention, setMention] = useState<{ query: string; start: number } | null>(null)
   const [mIdx, setMIdx] = useState(0)
+  const [emoji, setEmoji] = useState<{ query: string; start: number } | null>(null)
+  const [eIdx, setEIdx] = useState(0)
   const ref = useRef<HTMLTextAreaElement>(null)
   const typingRef = useRef(0)
 
@@ -61,6 +74,29 @@ export default function MessageInput(): JSX.Element {
       .map((r) => ({ kind: 'role', id: r.id, name: r.name, avatar: null, color: r.color }))
     return [...users, ...roleItems].slice(0, 8)
   }, [mention, members, roles])
+
+  const emojiResults = useMemo<EmojiItem[]>(() => {
+    if (!emoji) return []
+    const q = emoji.query.toLowerCase()
+    const out: EmojiItem[] = []
+    // Custom guild emojis first — they're the point of this app.
+    for (const e of customEmojis) {
+      if (e.name.toLowerCase().includes(q)) {
+        out.push({ name: e.name, char: null, url: e.url, insert: `<${e.animated ? 'a' : ''}:${e.name}:${e.id}>` })
+        if (out.length >= 30) break
+      }
+    }
+    for (const [name, char] of Object.entries(UNICODE_EMOJI)) {
+      if (out.length >= 40) break
+      if (name.toLowerCase().includes(q)) out.push({ name, char, url: null, insert: char })
+    }
+    out.sort((a, b) => {
+      const ap = a.name.toLowerCase().startsWith(q) ? 0 : 1
+      const bp = b.name.toLowerCase().startsWith(q) ? 0 : 1
+      return ap - bp
+    })
+    return out.slice(0, 12)
+  }, [emoji, customEmojis])
 
   useEffect(() => {
     if (editingId) {
@@ -90,8 +126,17 @@ export default function MessageInput(): JSX.Element {
     if (m) {
       setMention({ query: m[2], start: cursor - m[2].length - 1 })
       setMIdx(0)
+      setEmoji(null)
+      return
+    }
+    setMention(null)
+    // :shortcode emoji autocomplete (needs 2+ chars, and ":" at start/after space).
+    const em = before.match(/(?:^|\s):([a-zA-Z0-9_+~'-]{2,})$/)
+    if (em) {
+      setEmoji({ query: em[1], start: cursor - em[1].length - 1 })
+      setEIdx(0)
     } else {
-      setMention(null)
+      setEmoji(null)
     }
   }
 
@@ -103,6 +148,23 @@ export default function MessageInput(): JSX.Element {
     setText(next)
     setMention(null)
     const pos = mention.start + code.length
+    requestAnimationFrame(() => {
+      const el = ref.current
+      if (el) {
+        el.focus()
+        el.setSelectionRange(pos, pos)
+      }
+    })
+  }
+
+  const chooseEmoji = (item: EmojiItem): void => {
+    if (!emoji) return
+    const code = item.insert + ' '
+    const end = emoji.start + 1 + emoji.query.length
+    const next = text.slice(0, emoji.start) + code + text.slice(end)
+    setText(next)
+    setEmoji(null)
+    const pos = emoji.start + code.length
     requestAnimationFrame(() => {
       const el = ref.current
       if (el) {
@@ -126,6 +188,7 @@ export default function MessageInput(): JSX.Element {
     setText('')
     setShowEmoji(false)
     setMention(null)
+    setEmoji(null)
     await sendMessage(value)
   }
 
@@ -149,6 +212,28 @@ export default function MessageInput(): JSX.Element {
       if (e.key === 'Escape') {
         e.preventDefault()
         setMention(null)
+        return
+      }
+    }
+    if (emoji && emojiResults.length) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault()
+        setEIdx((i) => (i + 1) % emojiResults.length)
+        return
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault()
+        setEIdx((i) => (i - 1 + emojiResults.length) % emojiResults.length)
+        return
+      }
+      if (e.key === 'Enter' || e.key === 'Tab') {
+        e.preventDefault()
+        chooseEmoji(emojiResults[eIdx])
+        return
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault()
+        setEmoji(null)
         return
       }
     }
@@ -202,6 +287,30 @@ export default function MessageInput(): JSX.Element {
         </div>
       )}
 
+      {emoji && emojiResults.length > 0 && (
+        <div className="mention-popup emoji-ac-popup">
+          <div className="mention-head">Emoji matching :{emoji.query}</div>
+          {emojiResults.map((it, i) => (
+            <button
+              key={it.name + i}
+              className={'mention-item ' + (i === eIdx ? 'active' : '')}
+              onMouseEnter={() => setEIdx(i)}
+              onMouseDown={(e) => {
+                e.preventDefault()
+                chooseEmoji(it)
+              }}
+            >
+              {it.url ? (
+                <img className="ac-emoji" src={it.url} alt="" />
+              ) : (
+                <span className="ac-emoji-char">{it.char}</span>
+              )}
+              <span className="mention-name">:{it.name}:</span>
+            </button>
+          ))}
+        </div>
+      )}
+
       {replyTarget && (
         <div className="composer-banner">
           <span>Replying to <b>{replyTarget.author}</b></span>
@@ -242,6 +351,10 @@ export default function MessageInput(): JSX.Element {
               ))}
             </div>
           )}
+          {showGif && <GifPicker onClose={() => setShowGif(false)} />}
+          <button className="composer-emoji composer-gif" title="GIF (Tenor)" onClick={() => setShowGif((v) => !v)}>
+            GIF
+          </button>
           <button className="composer-emoji" title="Embed builder" onClick={() => setShowEmbed(true)}>
             <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm1 4v2h8V7H6Zm0 4v2h12v-2H6Zm0 4v2h9v-2H6Z" /><rect x="3" y="3" width="3" height="18" fill="var(--accent)" /></svg>
           </button>

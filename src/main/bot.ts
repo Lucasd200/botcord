@@ -29,7 +29,8 @@ import type {
   MemberDetail,
   ChannelOverwrite,
   ActionResult,
-  PermValue
+  PermValue,
+  BotProfile
 } from '@shared/types'
 import { MusicManager } from './music'
 
@@ -131,13 +132,7 @@ export class BotManager extends EventEmitter {
       for (const ev of ['voiceState', 'nowPlaying', 'queue', 'log'] as const) {
         this.music.on(ev, (...args: unknown[]) => this.emit(ev, ...args))
       }
-      this.emit('ready', {
-        id: u.id,
-        name: u.username,
-        discriminator: u.discriminator,
-        avatar: u.displayAvatarURL({ size: 128 }),
-        guildCount: client.guilds.cache.size
-      })
+      this.emitReady()
       this.emit('guilds', this.buildGuilds())
       this.emit('dms', this.recentDMs())
       this.startLatencyLoop()
@@ -192,6 +187,98 @@ export class BotManager extends EventEmitter {
       if (this.connected) this.emit('disconnect')
     })
     client.on('error', (e) => this.emit('log', 'Connection error: ' + e.message))
+  }
+
+  private emitReady(): void {
+    const u = this.client?.user
+    if (!u) return
+    this.emit('ready', {
+      id: u.id,
+      name: u.username,
+      discriminator: u.discriminator,
+      avatar: u.displayAvatarURL({ size: 128 }),
+      guildCount: this.client?.guilds.cache.size ?? 0
+    })
+  }
+
+  async getBotProfile(): Promise<BotProfile | null> {
+    if (!this.client?.user) return null
+    let description = ''
+    try {
+      const app = this.client.application
+      if (app) {
+        await app.fetch().catch(() => {})
+        description = app.description || ''
+      }
+    } catch {
+      /* ignore */
+    }
+    return {
+      username: this.client.user.username,
+      description,
+      avatar: this.client.user.displayAvatarURL({ size: 256 })
+    }
+  }
+
+  async editBotProfile(changes: {
+    username?: string
+    description?: string
+    avatarPath?: string
+  }): Promise<ActionResult> {
+    if (!this.client?.user) return { ok: false, error: 'Not connected.' }
+    try {
+      if (changes.avatarPath) await this.client.user.setAvatar(changes.avatarPath)
+      if (changes.username && changes.username.trim()) {
+        await this.client.user.setUsername(changes.username.trim())
+      }
+      if (changes.description != null && this.client.application) {
+        await this.client.application.edit({ description: changes.description })
+      }
+      this.emitReady()
+      return { ok: true }
+    } catch (e) {
+      const msg = (e as Error)?.message || String(e)
+      if (/rate limit|too many/i.test(msg))
+        return { ok: false, error: 'Discord rate-limits username changes (2 per hour). Try later.' }
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async getPins(channelId: string): Promise<MessageData[]> {
+    const ch = (await this.fetchTextChannel(channelId)) as any
+    if (!ch?.messages?.fetchPinned) return []
+    try {
+      const pinned = await ch.messages.fetchPinned()
+      return [...pinned.values()]
+        .sort((a: Message, b: Message) => a.createdTimestamp - b.createdTimestamp)
+        .map((m: Message) => this.messageToDict(m))
+    } catch {
+      return []
+    }
+  }
+
+  async pinMessage(messageId: string): Promise<ActionResult> {
+    const ch = this.activeChannel() as any
+    if (!ch) return { ok: false, error: 'No active channel.' }
+    try {
+      const m = await ch.messages.fetch(messageId)
+      await m.pin()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
+  }
+
+  async unpinMessage(messageId: string): Promise<ActionResult> {
+    const ch = this.activeChannel() as any
+    if (!ch) return { ok: false, error: 'No active channel.' }
+    try {
+      const m = await ch.messages.fetch(messageId)
+      await m.unpin()
+      return { ok: true }
+    } catch (e) {
+      return { ok: false, error: this.actionError(e) }
+    }
   }
 
   private startLatencyLoop(): void {
@@ -416,6 +503,7 @@ export class BotManager extends EventEmitter {
       files,
       mentionsMe,
       directPing,
+      pinned: message.pinned,
       mentions,
       reactions: message.reactions.cache.map((r) => ({
         emoji: r.emoji.name || '❓',
@@ -715,6 +803,23 @@ export class BotManager extends EventEmitter {
     } catch {
       return null
     }
+  }
+
+  /** Custom emojis from every guild the bot is in, for the ":" autocomplete. */
+  getEmojis(): import('@shared/types').EmojiInfo[] {
+    if (!this.client) return []
+    const out: import('@shared/types').EmojiInfo[] = []
+    for (const e of this.client.emojis.cache.values()) {
+      if (!e.name) continue
+      out.push({
+        name: e.name,
+        id: e.id,
+        animated: e.animated ?? false,
+        url: e.imageURL({ size: 64 }) || e.url,
+        guild: e.guild?.name || ''
+      })
+    }
+    return out
   }
 
   // ---- server settings & management ----------------------------------------

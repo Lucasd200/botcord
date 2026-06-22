@@ -28,7 +28,14 @@ export function initUpdater(getWindow: () => BrowserWindow | null): {
   }
 
   autoUpdater.on('update-available', (info) => send(IPC.evUpdateAvailable, { version: info.version }))
-  autoUpdater.on('download-progress', (p) => send(IPC.evUpdateProgress, { percent: Math.round(p.percent) }))
+  autoUpdater.on('download-progress', (p) =>
+    send(IPC.evUpdateProgress, {
+      percent: Math.round(p.percent),
+      transferred: p.transferred,
+      total: p.total,
+      bytesPerSecond: p.bytesPerSecond
+    })
+  )
   autoUpdater.on('update-downloaded', (info) => {
     downloaded = true
     send(IPC.evUpdateDownloaded, { version: info.version })

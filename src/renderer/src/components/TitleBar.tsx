@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useStore } from '../store'
 
+const mb = (bytes: number): string => (bytes / 1048576).toFixed(1)
+
 export default function TitleBar(): JSX.Element {
   const [maximized, setMaximized] = useState(false)
   const latency = useStore((s) => s.latency)
@@ -40,12 +42,25 @@ export default function TitleBar(): JSX.Element {
           <button
             className={'tb-update ' + (update.downloaded ? 'ready' : 'downloading')}
             onClick={() => update.downloaded && installUpdate()}
-            data-tip={update.downloaded ? 'Update Ready!' : `Downloading ${update.version}…`}
+            data-tip={
+              update.downloaded
+                ? 'Update Ready!'
+                : update.total
+                  ? `Downloading ${update.version} — ${update.percent}% (${mb(update.transferred)}/${mb(update.total)} MB)`
+                  : `Downloading ${update.version}…`
+            }
             aria-label="Update"
           >
             <svg width="16" height="16" viewBox="0 0 24 24">
               <path d="M12 3v10m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
             </svg>
+            {update.downloaded ? (
+              <span className="tb-update-label">Update Ready</span>
+            ) : (
+              <span className="tb-update-label">
+                {update.percent}%{update.total ? ` · ${mb(update.transferred)}/${mb(update.total)} MB` : ''}
+              </span>
+            )}
           </button>
         )}
         {!isMac && (

@@ -118,6 +118,14 @@ function registerIpc(): void {
   ipcMain.handle(IPC.setPresence, (_e, s: string, a: string) => bot.setPresence(s, a))
   ipcMain.handle(IPC.loadMembers, () => bot.refreshMembers())
   ipcMain.handle(IPC.getProfile, (_e, id: string) => bot.getProfile(id))
+  ipcMain.handle(IPC.getEmojis, () => bot.getEmojis())
+  ipcMain.handle(IPC.getBotProfile, () => bot.getBotProfile())
+  ipcMain.handle(IPC.editBotProfile, (_e, changes: { username?: string; description?: string; avatarPath?: string }) =>
+    bot.editBotProfile(changes)
+  )
+  ipcMain.handle(IPC.getPins, (_e, id: string) => bot.getPins(id))
+  ipcMain.handle(IPC.pinMessage, (_e, id: string) => bot.pinMessage(id))
+  ipcMain.handle(IPC.unpinMessage, (_e, id: string) => bot.unpinMessage(id))
 
   // server settings & management
   ipcMain.handle(IPC.getGuildDetail, (_e, id: string) => bot.getGuildDetail(id))

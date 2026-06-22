@@ -1,7 +1,7 @@
 import { EventEmitter } from 'events'
 import { basename, join, dirname } from 'path'
 import { existsSync, chmodSync } from 'fs'
-import type { ChildProcess } from 'child_process'
+import { spawnSync, type ChildProcess } from 'child_process'
 import {
   joinVoiceChannel,
   createAudioPlayer,
@@ -39,24 +39,55 @@ interface QueueItem extends Track {
  * go through Electron's asar shim).
  */
 function resolveYtDlp(): string {
-  const name = process.platform === 'win32' ? 'yt-dlp.exe' : 'yt-dlp'
+  // macOS MUST use the self-contained yt-dlp_macos binary. The plain "yt-dlp"
+  // asset is a Python zipapp that needs a system Python 3 (absent on most Macs),
+  // which is why music silently failed on macOS.
+  const candidates =
+    process.platform === 'win32'
+      ? ['yt-dlp.exe']
+      : process.platform === 'darwin'
+        ? ['yt-dlp_macos', 'yt-dlp']
+        : ['yt-dlp', 'yt-dlp_linux']
+
   let pkgDir: string
   try {
     pkgDir = dirname(require.resolve('youtube-dl-exec/package.json'))
   } catch {
     pkgDir = join(__dirname, '..', '..', 'node_modules', 'youtube-dl-exec')
   }
-  let bin = join(pkgDir, 'bin', name)
   // In a packaged app the JS resolves inside app.asar, but executables are
   // unpacked alongside it (see asarUnpack in electron-builder.yml).
-  if (bin.includes('app.asar') && !bin.includes('app.asar.unpacked')) {
-    bin = bin.replace('app.asar', 'app.asar.unpacked')
+  const binDir = (() => {
+    let d = join(pkgDir, 'bin')
+    if (d.includes('app.asar') && !d.includes('app.asar.unpacked')) {
+      d = d.replace('app.asar', 'app.asar.unpacked')
+    }
+    return d
+  })()
+
+  let bin = join(binDir, candidates[0])
+  for (const c of candidates) {
+    const p = join(binDir, c)
+    if (existsSync(p)) {
+      bin = p
+      break
+    }
   }
+
   if (process.platform !== 'win32') {
     try {
       chmodSync(bin, 0o755)
     } catch {
       /* bundle may be read-only; npm/electron-builder preserves the exec bit */
+    }
+  }
+  // Strip the Gatekeeper quarantine flag so macOS doesn't block spawning the
+  // downloaded helper from inside a non-notarized app bundle. Best-effort.
+  if (process.platform === 'darwin') {
+    try {
+      spawnSync('xattr', ['-d', 'com.apple.quarantine', bin], { stdio: 'ignore' })
+    } catch {
+      /* not quarantined / xattr unavailable */
     }
   }
   return bin

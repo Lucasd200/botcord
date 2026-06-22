@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import SelfProfile from './SelfProfile'
 import type { ChannelInfo } from '@shared/types'
 
 function ChannelIcon({ type }: { type: ChannelInfo['type'] }): JSX.Element {
@@ -26,10 +27,15 @@ export default function ChannelSidebar(): JSX.Element {
   const unread = useStore((s) => s.unread)
   const unreadMentions = useStore((s) => s.unreadMentions)
   const muted = useStore((s) => s.settings.notificationMode === 'none')
+  const mutedChannels = useStore((s) => s.settings.mutedChannels || [])
   const user = useStore((s) => s.user)
   const setShowSettings = useStore((s) => s.setShowSettings)
   const setShowMusic = useStore((s) => s.setShowMusic)
+  const openSelfProfile = useStore((s) => s.openSelfProfile)
+  const showSelfProfile = useStore((s) => s.showSelfProfile)
+  const openChannelMenu = useStore((s) => s.openChannelMenu)
   const openServerSettings = useStore((s) => s.openServerSettings)
+  const openChannelSettings = useStore((s) => s.openChannelSettings)
   const openProfile = useStore((s) => s.openProfile)
   const joinVoiceChannel = useStore((s) => s.voice)
   const guild = useMemo(() => guilds.find((g) => g.id === activeGuildId) || null, [guilds, activeGuildId])
@@ -41,7 +47,8 @@ export default function ChannelSidebar(): JSX.Element {
 
   const channelRow = (ch: ChannelInfo): JSX.Element => {
     const isVoice = ch.type === 'voice' || ch.type === 'stage'
-    const hasUnread = !muted && (unread[ch.id] || 0) > 0
+    const isMuted = mutedChannels.includes(ch.id)
+    const hasUnread = !muted && !isMuted && (unread[ch.id] || 0) > 0
     const mentions = muted ? 0 : unreadMentions[ch.id] || 0
     const connectedHere = isVoice && joinVoiceChannel.connected && joinVoiceChannel.channelName === ch.name
     const vMembers = ch.voiceMembers || []
@@ -53,9 +60,14 @@ export default function ChannelSidebar(): JSX.Element {
             (activeChannelId === ch.id ? 'active ' : '') +
             (hasUnread ? 'unread ' : '') +
             (isVoice ? 'voice ' : '') +
+            (isMuted ? 'muted-channel ' : '') +
             (connectedHere ? 'connected' : '')
           }
           onClick={() => openChannel(ch.id)}
+          onContextMenu={(e) => {
+            e.preventDefault()
+            openChannelMenu(e.clientX, e.clientY, ch.id, ch.name, isVoice)
+          }}
           title={isVoice ? 'Open voice channel chat' : ch.topic || ch.name}
         >
           {hasUnread && mentions === 0 && <span className="unread-dot" />}
@@ -85,6 +97,25 @@ export default function ChannelSidebar(): JSX.Element {
               <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.58 3.6a1 1 0 0 1-.25 1l-2.23 2.2Z" /></svg>
             </span>
           )}
+          <span
+            className="channel-gear"
+            role="button"
+            tabIndex={0}
+            title="Edit channel"
+            onClick={(e) => {
+              e.stopPropagation()
+              openChannelSettings(ch.id)
+            }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault()
+                e.stopPropagation()
+                openChannelSettings(ch.id)
+              }
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+          </span>
         </button>
         {isVoice &&
           vMembers.map((vm) => (
@@ -156,13 +187,14 @@ export default function ChannelSidebar(): JSX.Element {
       </div>
 
       <footer className="user-panel">
-        <div className="user-panel-info">
+        {showSelfProfile && <SelfProfile />}
+        <button className="user-panel-info" onClick={() => openSelfProfile()} title="Your bot — click for options">
           <Avatar name={user?.name || 'Bot'} src={user?.avatar} size={32} status="online" />
           <div className="user-panel-text">
             <span className="user-panel-name">{user?.name || 'Bot'}</span>
             <span className="user-panel-tag">{user?.guildCount ?? 0} servers</span>
           </div>
-        </div>
+        </button>
         <button
           className={'user-panel-btn ' + (joinVoiceChannel.connected ? 'voice-on' : '')}
           onClick={() => setShowMusic(true)}

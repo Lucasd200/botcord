@@ -101,6 +101,20 @@ export default function ContextMenu(): JSX.Element | null {
         <button className="ctx-item" onClick={() => copy(m.id, 'Message ID copied')}>
           Copy Message ID <Kbd>#</Kbd>
         </button>
+        <div className="ctx-sep" />
+        <button
+          className="ctx-item"
+          onClick={async () => {
+            closeMenu()
+            const r = m.pinned ? await api.unpinMessage(m.id) : await api.pinMessage(m.id)
+            pushToast(
+              r.ok ? (m.pinned ? 'Message unpinned' : 'Message pinned') : r.error || 'Pin failed',
+              r.ok ? 'success' : 'error'
+            )
+          }}
+        >
+          {m.pinned ? 'Unpin Message' : 'Pin Message'} <Kbd>📌</Kbd>
+        </button>
         {m.isSelf && (
           <>
             <div className="ctx-sep" />

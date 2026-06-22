@@ -6,6 +6,8 @@ import type { Settings } from '@shared/types'
 const DEFAULTS: Settings = {
   keepLoggedIn: false,
   savedToken: '',
+  accounts: [],
+  mutedChannels: [],
   theme: 'dark',
   colorTheme: '',
   accent: '#5865F2',
@@ -18,7 +20,8 @@ const DEFAULTS: Settings = {
   lastChannelId: '',
   presenceStatus: 'Online',
   presenceActivity: '',
-  spellcheck: true
+  spellcheck: true,
+  tenorApiKey: ''
 }
 
 function dataDir(): string {
@@ -73,6 +76,9 @@ export function loadSettings(): Settings {
       const raw = JSON.parse(readFileSync(path, 'utf-8'))
       Object.assign(data, raw)
       data.savedToken = decryptToken(raw.savedToken || '')
+      data.accounts = Array.isArray(raw.accounts)
+        ? raw.accounts.map((a: { token?: string }) => ({ ...a, token: decryptToken(a.token || '') }))
+        : []
     }
   } catch {
     /* ignore — return defaults */
@@ -84,7 +90,11 @@ export function saveSettings(partial: Partial<Settings>): Settings {
   const current = loadSettings()
   const merged: Settings = { ...current, ...partial }
   try {
-    const toWrite = { ...merged, savedToken: encryptToken(merged.savedToken || '') }
+    const toWrite = {
+      ...merged,
+      savedToken: encryptToken(merged.savedToken || ''),
+      accounts: (merged.accounts || []).map((a) => ({ ...a, token: encryptToken(a.token || '') }))
+    }
     writeFileSync(settingsPath(), JSON.stringify(toWrite, null, 2), 'utf-8')
   } catch {
     /* ignore */
