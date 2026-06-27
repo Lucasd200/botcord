@@ -43,6 +43,17 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
   const reactIdentifier = (r: { emoji: string; id: string | null }): string =>
     r.id ? `${r.emoji}:${r.id}` : r.emoji
 
+  // When the message text is nothing but a media link (e.g. a Tenor/Giphy
+  // .gif or a raw image URL) that's already rendered in the media block
+  // below, showing the raw URL as text is redundant. Suppress the text in
+  // that case and let the image stand on its own.
+  const showText =
+    !!m.content &&
+    (m.images.length === 0 ||
+      m.content
+        .split(/\s+/)
+        .some((tok) => tok && !m.images.includes(tok)))
+
   return (
     <div
       className={'message ' + (grouped ? 'grouped ' : '') + (compact ? 'compact ' : '') + (m.mentionsMe ? 'mention ' : '')}
@@ -84,7 +95,7 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
             </div>
           )}
 
-          {m.content && <div className="message-text">{formatContent(m.content, m.mentions)}{m.editedTimestamp && <span className="edited">(edited)</span>}</div>}
+          {showText && <div className="message-text">{formatContent(m.content, m.mentions)}{m.editedTimestamp && <span className="edited">(edited)</span>}</div>}
 
           {m.images.length > 0 && (
             <div className="message-media">
