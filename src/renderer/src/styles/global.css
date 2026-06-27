@@ -109,12 +109,15 @@ a:hover {
 .app-body {
   flex: 1;
   min-height: 0;
+  min-width: 0;
   display: flex;
 }
 .workspace {
   flex: 1;
   display: flex;
   min-height: 0;
+  min-width: 0;
+  overflow: hidden;
   background: var(--bg);
   border-top-left-radius: 0;
 }
@@ -1328,6 +1331,7 @@ a:hover {
 /* Member list ----------------------------------------------- */
 .member-list {
   width: 240px;
+  min-width: 0;
   background: var(--bg-dark);
   flex-shrink: 0;
   overflow: hidden;
