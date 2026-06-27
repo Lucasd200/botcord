@@ -615,6 +615,7 @@ a:hover {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  text-align: left;
 }
 .channel-badge {
   min-width: 16px;
@@ -743,6 +744,7 @@ a:hover {
 .chat-header-title {
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 0;
 }
@@ -758,6 +760,7 @@ a:hover {
   font-weight: 700;
   font-size: 16px;
   white-space: nowrap;
+  text-align: left;
 }
 .header-sep {
   width: 1px;
@@ -3086,6 +3089,7 @@ a:hover {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 14px;
+  text-align: left;
 }
 .ss-channel-glyph {
   width: 18px;
