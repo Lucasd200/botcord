@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { useStore } from '../store'
+import Icon from './Icon'
 
 // Tenor's public sample key — works out of the box; users can set their own in
 // Settings → Advanced if it ever gets rate-limited.
@@ -87,7 +88,7 @@ export default function GifPicker({ onClose }: { onClose: () => void }): JSX.Ele
           onChange={(e) => setQ(e.target.value)}
         />
         <button className="gif-close" onClick={onClose} title="Close">
-          ✕
+          <Icon name="close" size={18} />
         </button>
       </div>
       <div className="gif-grid">

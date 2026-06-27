@@ -2,6 +2,7 @@ import { memo } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import Icon from './Icon'
 import { formatContent } from '../format'
 import type { MessageData } from '@shared/types'
 
@@ -100,7 +101,7 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
             <div className="message-files">
               {m.files.map((f, i) => (
                 <a key={i} href={f.url} target="_blank" rel="noreferrer" className="file-card">
-                  <svg viewBox="0 0 24 24" width="22" height="22"><path fill="var(--accent)" d="M6 2h8l4 4v16H6z" /><path fill="var(--bg-darker)" d="M14 2v4h4z" /></svg>
+                  <Icon name="description" size={22} filled style={{ color: 'var(--accent)' }} />
                   <div className="file-meta">
                     <span className="file-name">{f.name}</span>
                     {f.size != null && <span className="file-size">{(f.size / 1024).toFixed(1)} KB</span>}
@@ -137,22 +138,22 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
 
         <div className="message-actions">
           <button title="Add reaction" onClick={(e) => openMenu(e.clientX - 150, e.clientY + 10, m.id, 'react')}>
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-3.5 7a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 17.5c-2 0-3.7-1.2-4.4-3h8.8c-.7 1.8-2.4 3-4.4 3Z" /></svg>
+            <Icon name="add_reaction" size={18} />
           </button>
           <button title="Reply" onClick={() => setReplyTarget(m)}>
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M10 9V5l-7 7 7 7v-4c5 0 8 1.5 10 5-1-5-4-10-10-11Z" /></svg>
+            <Icon name="reply" size={18} />
           </button>
           {m.isSelf && (
             <button title="Edit" onClick={() => setEditing(m.id)}>
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M3 17.25V21h3.75L17.8 9.94l-3.75-3.75L3 17.25ZM20.7 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" /></svg>
+              <Icon name="edit" size={18} />
             </button>
           )}
           <button title="Copy text" onClick={copy}>
-            <svg viewBox="0 0 24 24"><path fill="currentColor" d="M16 1H4a2 2 0 0 0-2 2v14h2V3h12V1Zm3 4H8a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2Z" /></svg>
+            <Icon name="content_copy" size={18} />
           </button>
           {m.isSelf && (
             <button title="Delete" className="danger" onClick={del}>
-              <svg viewBox="0 0 24 24"><path fill="currentColor" d="M6 7h12l-1 14H7L6 7Zm9-3 1 2H8l1-2h6Z" /></svg>
+              <Icon name="delete" size={18} />
             </button>
           )}
         </div>

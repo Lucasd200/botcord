@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useStore } from '../store'
+import Icon from './Icon'
 import type { GuildInfo } from '@shared/types'
 
 function orderedGuilds(guilds: GuildInfo[], order: string[]): GuildInfo[] {
@@ -53,7 +54,7 @@ export default function ServerRail(): JSX.Element {
         onClick={() => selectGuild(null)}
         data-tip="Direct Messages"
       >
-        <svg width="26" height="26" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3 3 10v11h6v-6h6v6h6V10z" /></svg>
+        <Icon name="home" size={26} filled />
       </button>
       <div className="rail-divider" />
       <div className="rail-scroll">

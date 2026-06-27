@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import Icon from './Icon'
 import { DEFAULT_THEME_SWATCHES, COLOR_THEMES } from '../theme'
 
 type Tab = 'account' | 'appearance' | 'notifications' | 'presence' | 'advanced'
@@ -56,7 +57,7 @@ export default function Settings(): JSX.Element {
 
       <div className="settings-content">
         <button className="settings-close" onClick={() => setShowSettings(false)} title="Close (Esc)">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path stroke="currentColor" strokeWidth="2" d="M5 5l14 14M19 5L5 19" /></svg>
+          <Icon name="close" size={20} />
           <span>ESC</span>
         </button>
 

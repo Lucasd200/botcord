@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState, type ReactNode } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
+import Icon from './Icon'
 
 const QUICK = ['👍', '❤️', '😂', '🎉', '😮', '😢']
 const MORE = [
@@ -71,7 +72,9 @@ export default function ContextMenu(): JSX.Element | null {
           {QUICK.map((e) => (
             <button key={e} onClick={() => react(e)} title={`React ${e}`}>{e}</button>
           ))}
-          <button className="ctx-more" onClick={() => setShowAllEmoji((v) => !v)} title="More emoji">＋</button>
+          <button className="ctx-more" onClick={() => setShowAllEmoji((v) => !v)} title="More emoji">
+            <Icon name="add" size={18} />
+          </button>
         </div>
 
         {showAllEmoji && (

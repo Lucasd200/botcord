@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import Icon from './Icon'
 import type { ActionResult, ChannelDetail, ChannelOverwrite, MemberDetail } from '@shared/types'
 
 type Tab = 'overview' | 'roles' | 'members' | 'channels'
@@ -83,9 +84,7 @@ export default function ServerSettings(): JSX.Element {
 
       <div className="settings-content">
         <button className="settings-close" onClick={close} title="Close (Esc)">
-          <svg viewBox="0 0 24 24" width="20" height="20">
-            <path stroke="currentColor" strokeWidth="2" d="M5 5l14 14M19 5L5 19" />
-          </svg>
+          <Icon name="close" size={20} />
           <span>ESC</span>
         </button>
 

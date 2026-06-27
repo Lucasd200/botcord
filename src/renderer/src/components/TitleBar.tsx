@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { api } from '../api'
 import { useStore } from '../store'
+import Icon from './Icon'
 
 const mb = (bytes: number): string => (bytes / 1048576).toFixed(1)
 
@@ -51,9 +52,7 @@ export default function TitleBar(): JSX.Element {
             }
             aria-label="Update"
           >
-            <svg width="16" height="16" viewBox="0 0 24 24">
-              <path d="M12 3v10m0 0 4-4m-4 4-4-4M5 19h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" fill="none" />
-            </svg>
+            <Icon name={update.downloaded ? 'restart_alt' : 'download'} size={16} />
             {update.downloaded ? (
               <span className="tb-update-label">Update Ready</span>
             ) : (
@@ -66,17 +65,13 @@ export default function TitleBar(): JSX.Element {
         {!isMac && (
           <>
             <button className="tb-btn" onClick={() => api.windowMinimize()} aria-label="Minimize">
-              <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="currentColor" y="5" width="11" height="1" /></svg>
+              <Icon name="minimize" size={16} />
             </button>
             <button className="tb-btn" onClick={() => api.windowMaximize()} aria-label="Maximize">
-              {maximized ? (
-                <svg width="11" height="11" viewBox="0 0 11 11"><path fill="none" stroke="currentColor" d="M2.5 2.5h6v6h-6z M3.5 2.5V1.5h6v6h-1" /></svg>
-              ) : (
-                <svg width="11" height="11" viewBox="0 0 11 11"><rect fill="none" stroke="currentColor" x="1.5" y="1.5" width="8" height="8" /></svg>
-              )}
+              <Icon name={maximized ? 'fullscreen_exit' : 'fullscreen'} size={14} />
             </button>
             <button className="tb-btn tb-close" onClick={() => api.windowClose()} aria-label="Close">
-              <svg width="11" height="11" viewBox="0 0 11 11"><path stroke="currentColor" strokeWidth="1.1" d="M1 1l9 9M10 1l-9 9" /></svg>
+              <Icon name="close" size={16} />
             </button>
           </>
         )}

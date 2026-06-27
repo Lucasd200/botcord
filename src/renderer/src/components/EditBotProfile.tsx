@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import Icon from './Icon'
 
 /** Modal to edit the logged-in bot's avatar, username and About Me. */
 export default function EditBotProfile(): JSX.Element | null {
@@ -65,7 +66,7 @@ export default function EditBotProfile(): JSX.Element | null {
         <div className="chmodal-head">
           <h3>Edit Bot Profile</h3>
           <button className="embed-close" onClick={close} title="Close (Esc)">
-            ✕
+            <Icon name="close" size={18} />
           </button>
         </div>
         <div className="chmodal-body">

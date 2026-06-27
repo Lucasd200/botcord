@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
+import Icon from './Icon'
 
 /** Popover listing the active channel's pinned messages, with jump + unpin. */
 export default function PinsPopover(): JSX.Element {
@@ -48,7 +49,7 @@ export default function PinsPopover(): JSX.Element {
               </div>
             </div>
             <button className="pin-unpin" title="Unpin" onClick={(e) => unpin(m.id, e)}>
-              ✕
+              <Icon name="close" size={16} />
             </button>
           </div>
         ))}
