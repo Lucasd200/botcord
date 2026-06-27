@@ -82,6 +82,30 @@ a:hover {
   background: var(--bg-darker);
 }
 
+/* Material Symbols (Google Material Icons) ------------------ */
+/* Per-icon size is set inline via font-size on <Icon />. The
+   font-variation-settings default keeps icons outlined and at
+   normal weight; .filled opts into the solid variant. */
+.material-symbols-rounded {
+  font-family: 'Material Symbols Rounded';
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+  vertical-align: middle;
+  user-select: none;
+}
+.material-symbols-rounded.filled {
+  font-variation-settings: 'FILL' 1;
+}
+
 /* Scrollbars ------------------------------------------------ */
 ::-webkit-scrollbar {
   width: 12px;

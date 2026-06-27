@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import Message from './Message'
 import MessageInput from './MessageInput'
 import PinsPopover from './PinsPopover'
+import Icon from './Icon'
 
 function dayKey(ts: number): string {
   return new Date(ts).toDateString()
@@ -38,7 +39,7 @@ export default function ChatView(): JSX.Element {
     return (
       <div className="chat-view">
         <div className="chat-empty">
-          <svg width="92" height="92" viewBox="0 0 24 24" opacity="0.18"><path fill="currentColor" d="M20 2H4a2 2 0 0 0-2 2v18l4-4h14a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2Z" /></svg>
+          <Icon name="forum" size={92} style={{ opacity: 0.18 }} />
           <h2>No channel open</h2>
           <p>Pick a server on the left, then choose a channel to start reading and chatting as your bot.</p>
         </div>
@@ -56,13 +57,13 @@ export default function ChatView(): JSX.Element {
         </div>
         <div className="chat-header-actions">
           <div className="search-box">
-            <svg viewBox="0 0 24 24" width="16" height="16"><path fill="currentColor" d="M15.5 14h-.8l-.3-.3a6.5 6.5 0 1 0-.7.7l.3.3v.8l5 5 1.5-1.5-5-5Zm-6 0a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Z" /></svg>
+            <Icon name="search" size={16} />
             <input placeholder="Search" value={query} onChange={(e) => setQuery(e.target.value)} />
           </div>
           {activeChannelId && (
             <div className="header-pins">
               <button className={'header-btn ' + (showPins ? 'active' : '')} title="Pinned messages" onClick={togglePins}>
-                <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M14 4v5l2 3v2h-5v5l-1 1-1-1v-5H4v-2l2-3V4a2 2 0 0 1-1-1.7V2h10v.3A2 2 0 0 1 14 4Z" /></svg>
+                <Icon name="push_pin" size={20} />
               </button>
               {showPins && <PinsPopover />}
             </div>
@@ -73,12 +74,12 @@ export default function ChatView(): JSX.Element {
               title="Edit Channel"
               onClick={() => openChannelSettings(activeChannelId)}
             >
-              <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+              <Icon name="settings" size={20} />
             </button>
           )}
           {!isDM && (
             <button className={'header-btn ' + (showMembers ? 'active' : '')} title="Toggle member list" onClick={toggleMembers}>
-              <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M16 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm-8 0a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm0 2c-2.7 0-8 1.3-8 4v3h8v-3c0-1 .4-1.9 1-2.6A12 12 0 0 0 8 13Zm8 0c-.3 0-.7 0-1.1.1 1 .8 1.6 1.8 1.6 2.9v3h7.5v-3c0-2.7-5.3-4-8-4Z" /></svg>
+              <Icon name="groups" size={22} />
             </button>
           )}
         </div>

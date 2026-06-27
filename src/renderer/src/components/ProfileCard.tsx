@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { useStore } from '../store'
 import Avatar from './Avatar'
+import Icon from './Icon'
 
 const STATUS_LABEL: Record<string, string> = {
   online: 'Online',
@@ -45,7 +46,9 @@ export default function ProfileCard(): JSX.Element | null {
             <div className="profile-avatar-wrap">
               <Avatar name={profile.displayName} src={profile.avatar} size={88} status={profile.status || undefined} />
             </div>
-            <button className="profile-close" onClick={close} aria-label="Close">✕</button>
+            <button className="profile-close" onClick={close} aria-label="Close">
+              <Icon name="close" size={18} />
+            </button>
 
             <div className="profile-body">
               <div className="profile-names">

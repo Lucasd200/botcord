@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
+import Icon from './Icon'
 
 function fmt(sec: number | null): string {
   if (sec == null) return ''
@@ -31,7 +32,9 @@ export default function MusicPanel(): JSX.Element {
     <aside className="music-panel">
       <header className="music-header">
         <span>🎵 Music</span>
-        <button className="music-close" onClick={() => setShowMusic(false)} title="Hide">✕</button>
+        <button className="music-close" onClick={() => setShowMusic(false)} title="Hide">
+          <Icon name="close" size={18} />
+        </button>
       </header>
 
       <div className="music-scroll">
@@ -56,19 +59,25 @@ export default function MusicPanel(): JSX.Element {
                     {fmt(nowPlaying.duration)} · added by {nowPlaying.requester}
                   </div>
                   <div className="np-controls">
-                    <button onClick={() => api.musicToggleLoop()} className={nowPlaying.loop ? 'on' : ''} title="Loop">🔁</button>
+                    <button onClick={() => api.musicToggleLoop()} className={nowPlaying.loop ? 'on' : ''} title="Loop">
+                      <Icon name="repeat" size={22} filled={nowPlaying.loop} />
+                    </button>
                     <button
                       className="np-play"
                       onClick={() => (nowPlaying.paused ? api.musicResume() : api.musicPause())}
                       title={nowPlaying.paused ? 'Resume' : 'Pause'}
                     >
-                      {nowPlaying.paused ? '▶' : '⏸'}
+                      <Icon name={nowPlaying.paused ? 'play_arrow' : 'pause'} size={26} filled />
                     </button>
-                    <button onClick={() => api.musicSkip()} title="Skip">⏭</button>
-                    <button onClick={() => api.musicStop()} title="Stop">⏹</button>
+                    <button onClick={() => api.musicSkip()} title="Skip">
+                      <Icon name="skip_next" size={22} filled />
+                    </button>
+                    <button onClick={() => api.musicStop()} title="Stop">
+                      <Icon name="stop" size={22} filled />
+                    </button>
                   </div>
                   <div className="np-volume">
-                    🔈
+                    <Icon name="volume_up" size={18} />
                     <input
                       type="range"
                       min={0}
@@ -96,7 +105,9 @@ export default function MusicPanel(): JSX.Element {
               />
               <button onClick={add} className="music-add-btn">Add</button>
             </div>
-            <button className="music-local" onClick={addLocal}>＋ Add local audio file</button>
+            <button className="music-local" onClick={addLocal}>
+              <Icon name="add" size={16} /> Add local audio file
+            </button>
 
             {queue.length > 0 && (
               <div className="queue">
@@ -108,10 +119,14 @@ export default function MusicPanel(): JSX.Element {
                       <span className="queue-title">{t.title}</span>
                       <span className="queue-req">{fmt(t.duration)} · {t.requester}</span>
                     </div>
-                    <button className="queue-remove" onClick={() => api.musicRemove(i)} title="Remove">✕</button>
+                    <button className="queue-remove" onClick={() => api.musicRemove(i)} title="Remove">
+                      <Icon name="close" size={16} />
+                    </button>
                   </div>
                 ))}
-                <button className="queue-shuffle" onClick={() => api.musicShuffle()}>🔀 Shuffle</button>
+                <button className="queue-shuffle" onClick={() => api.musicShuffle()}>
+                  <Icon name="shuffle" size={16} /> Shuffle
+                </button>
               </div>
             )}
           </>

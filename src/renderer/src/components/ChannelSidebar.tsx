@@ -3,15 +3,16 @@ import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
 import SelfProfile from './SelfProfile'
+import Icon from './Icon'
 import type { ChannelInfo } from '@shared/types'
 
 function ChannelIcon({ type }: { type: ChannelInfo['type'] }): JSX.Element {
   if (type === 'voice' || type === 'stage')
-    return <svg className="ch-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Zm7 9a7 7 0 0 1-6 6.92V21h-2v-2.08A7 7 0 0 1 5 12h2a5 5 0 0 0 10 0Z" /></svg>
+    return <Icon name="mic" size={20} className="ch-icon" />
   if (type === 'announcement')
-    return <svg className="ch-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M3 10v4h3l4 4V6L6 10H3Zm13 2a4 4 0 0 0-2-3.46v6.92A4 4 0 0 0 16 12Z" /></svg>
+    return <Icon name="campaign" size={20} className="ch-icon" />
   if (type === 'forum')
-    return <svg className="ch-icon" viewBox="0 0 24 24"><path fill="currentColor" d="M4 4h16v10H7l-3 3V4Z" /></svg>
+    return <Icon name="forum" size={20} className="ch-icon" />
   return <span className="ch-hash">#</span>
 }
 
@@ -94,7 +95,7 @@ export default function ChannelSidebar(): JSX.Element {
                 }
               }}
             >
-              <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M6.6 10.8a15 15 0 0 0 6.6 6.6l2.2-2.2a1 1 0 0 1 1-.24 11.4 11.4 0 0 0 3.6.58 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1c0 1.25.2 2.46.58 3.6a1 1 0 0 1-.25 1l-2.23 2.2Z" /></svg>
+              <Icon name="call" size={14} />
             </span>
           )}
           <span
@@ -114,7 +115,7 @@ export default function ChannelSidebar(): JSX.Element {
               }
             }}
           >
-            <svg viewBox="0 0 24 24" width="14" height="14"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+            <Icon name="settings" size={14} />
           </span>
         </button>
         {isVoice &&
@@ -144,7 +145,7 @@ export default function ChannelSidebar(): JSX.Element {
             aria-label="Server Settings"
             onClick={() => openServerSettings()}
           >
-            <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+            <Icon name="settings" size={18} />
           </button>
         )}
       </header>
@@ -173,7 +174,7 @@ export default function ChannelSidebar(): JSX.Element {
               <div className="category" key={key}>
                 {cat.name && (
                   <button className="category-header" onClick={() => toggleCollapsed(key)}>
-                    <svg className={'cat-caret ' + (isCollapsed ? 'closed' : '')} viewBox="0 0 24 24"><path fill="currentColor" d="M7 10l5 5 5-5z" /></svg>
+                    <Icon name="expand_more" size={12} className={'cat-caret ' + (isCollapsed ? 'closed' : '')} />
                     <span>{cat.name}</span>
                   </button>
                 )}
@@ -201,10 +202,10 @@ export default function ChannelSidebar(): JSX.Element {
           title="Music"
           aria-label="Music"
         >
-          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M9 17.5A2.5 2.5 0 1 1 6.5 15c.6 0 1.1.2 1.5.5V4l11-2v12.5a2.5 2.5 0 1 1-2-2.45V6L10 7.2v10.3Z" /></svg>
+          <Icon name="music_note" size={20} />
         </button>
         <button className="user-panel-btn" onClick={() => setShowSettings(true)} title="Settings" aria-label="Settings">
-          <svg viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M19.4 13a7.7 7.7 0 0 0 0-2l2-1.6-2-3.4-2.4 1a7.6 7.6 0 0 0-1.7-1l-.4-2.5h-3.8l-.4 2.5a7.6 7.6 0 0 0-1.7 1l-2.4-1-2 3.4L4.6 11a7.7 7.7 0 0 0 0 2l-2 1.6 2 3.4 2.4-1a7.6 7.6 0 0 0 1.7 1l.4 2.5h3.8l.4-2.5a7.6 7.6 0 0 0 1.7-1l2.4 1 2-3.4-2-1.6ZM12 15.5a3.5 3.5 0 1 1 0-7 3.5 3.5 0 0 1 0 7Z" /></svg>
+          <Icon name="settings" size={20} />
         </button>
       </footer>
     </aside>

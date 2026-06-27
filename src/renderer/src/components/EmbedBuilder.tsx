@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { api } from '../api'
+import Icon from './Icon'
 import { formatContent } from '../format'
 import type { EmbedData, EmbedField } from '@shared/types'
 
@@ -61,7 +62,9 @@ export default function EmbedBuilder(): JSX.Element | null {
       <div className="embed-modal" onClick={(e) => e.stopPropagation()}>
         <header className="embed-head">
           <h2>Embed builder</h2>
-          <button className="embed-close" onClick={() => close(false)}>✕</button>
+          <button className="embed-close" onClick={() => close(false)}>
+            <Icon name="close" size={18} />
+          </button>
         </header>
 
         <div className="embed-body">
@@ -102,7 +105,9 @@ export default function EmbedBuilder(): JSX.Element | null {
               <div className="ef-field" key={i}>
                 <div className="ef-row">
                   <input className="ef-input" placeholder="Field name" value={f.name} onChange={(e) => setField(i, 'name', e.target.value)} />
-                  <button className="ef-remove" onClick={() => removeField(i)} title="Remove field">✕</button>
+                  <button className="ef-remove" onClick={() => removeField(i)} title="Remove field">
+                    <Icon name="close" size={16} />
+                  </button>
                 </div>
                 <textarea className="ef-input" rows={2} placeholder="Field value" value={f.value} onChange={(e) => setField(i, 'value', e.target.value)} />
                 <label className="ef-toggle small">
@@ -111,7 +116,11 @@ export default function EmbedBuilder(): JSX.Element | null {
                 </label>
               </div>
             ))}
-            {d.fields.length < 25 && <button className="ef-add" onClick={addField}>＋ Add field</button>}
+            {d.fields.length < 25 && (
+              <button className="ef-add" onClick={addField}>
+                <Icon name="add" size={16} /> Add field
+              </button>
+            )}
 
             <label className="ef-label">Images</label>
             <input className="ef-input" placeholder="Large image URL" value={d.image} onChange={(e) => set('image', e.target.value)} />

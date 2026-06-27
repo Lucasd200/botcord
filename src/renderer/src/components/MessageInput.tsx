@@ -3,6 +3,7 @@ import { useStore } from '../store'
 import { api } from '../api'
 import Avatar from './Avatar'
 import GifPicker from './GifPicker'
+import Icon from './Icon'
 import { UNICODE_EMOJI } from '../emojiShortcodes'
 
 const EMOJI = ['😀', '😂', '🥰', '😎', '🤔', '👍', '🙏', '🎉', '🔥', '❤️', '✨', '👀', '😭', '💀', '🤖', '✅']
@@ -314,18 +315,22 @@ export default function MessageInput(): JSX.Element {
       {replyTarget && (
         <div className="composer-banner">
           <span>Replying to <b>{replyTarget.author}</b></span>
-          <button onClick={() => setReplyTarget(null)}>✕</button>
+          <button onClick={() => setReplyTarget(null)}>
+            <Icon name="close" size={14} />
+          </button>
         </div>
       )}
       {editingId && (
         <div className="composer-banner edit">
           <span>Editing message · <i>escape to cancel</i></span>
-          <button onClick={() => setEditing(null)}>✕</button>
+          <button onClick={() => setEditing(null)}>
+            <Icon name="close" size={14} />
+          </button>
         </div>
       )}
       <div className="composer-box">
         <button className="composer-attach" title="Send a file" onClick={attach}>
-          <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M12 5v14M5 12h14" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+          <Icon name="add" size={22} />
         </button>
         <textarea
           ref={ref}
@@ -356,13 +361,13 @@ export default function MessageInput(): JSX.Element {
             GIF
           </button>
           <button className="composer-emoji" title="Embed builder" onClick={() => setShowEmbed(true)}>
-            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M5 3h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm1 4v2h8V7H6Zm0 4v2h12v-2H6Zm0 4v2h9v-2H6Z" /><rect x="3" y="3" width="3" height="18" fill="var(--accent)" /></svg>
+            <Icon name="article" size={22} />
           </button>
           <button className="composer-emoji" title="Emoji" onClick={() => setShowEmoji((v) => !v)}>
-            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm-3.5 7a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3Zm7 0a1.5 1.5 0 1 1 0 3 1.5 1.5 0 0 1 0-3ZM12 17.5c-2.3 0-4.3-1.4-5-3.5h10c-.7 2.1-2.7 3.5-5 3.5Z" /></svg>
+            <Icon name="sentiment_satisfied" size={24} filled />
           </button>
           <button className={'composer-send ' + (text.trim() ? 'ready' : '')} title="Send" onClick={submit}>
-            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M3 20.5 22 12 3 3.5 3 10l13 2-13 2z" /></svg>
+            <Icon name="send" size={22} />
           </button>
         </div>
       </div>
