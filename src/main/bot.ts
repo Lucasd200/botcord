@@ -58,6 +58,11 @@ export class BotManager extends EventEmitter {
   private historyLimit = 50
   private latencyTimer: NodeJS.Timeout | null = null
   private connected = false
+  /** Cached member list per guild id, with the time it was built. Switching
+   *  channels inside the same guild reuses the cache instead of re-fetching
+   *  the whole member list from Discord every time. */
+  private memberCache = new Map<string, { members: MemberData[]; ts: number }>()
+  private static readonly MEMBER_CACHE_TTL = 60_000
 
   setHistoryLimit(n: number): void {
     this.historyLimit = Math.max(10, Math.min(100, n || 50))
@@ -139,7 +144,10 @@ export class BotManager extends EventEmitter {
     })
 
     client.on('guildCreate', () => this.emit('guilds', this.buildGuilds()))
-    client.on('guildDelete', () => this.emit('guilds', this.buildGuilds()))
+    client.on('guildDelete', (g) => {
+      this.memberCache.delete(g.id)
+      this.emit('guilds', this.buildGuilds())
+    })
     client.on('voiceStateUpdate', () => this.emit('guilds', this.buildGuilds()))
     client.on('roleCreate', () => this.emit('guilds', this.buildGuilds()))
     client.on('roleUpdate', () => this.emit('guilds', this.buildGuilds()))
@@ -531,13 +539,19 @@ export class BotManager extends EventEmitter {
         return
       }
       this.activeChannelId = channel.id
-      const fetched = await channel.messages.fetch({ limit: this.historyLimit })
+      const guild = (channel as any).guild as Guild | undefined
+      const isDM = channel.type === ChannelType.DM
+
+      // History and members are independent — fetch them in parallel rather
+      // than serially so the channel opens as fast as the slower of the two.
+      const historyP = channel.messages.fetch({ limit: this.historyLimit })
+      const membersP = guild ? this.loadMembers(guild) : Promise.resolve([] as MemberData[])
+
+      const [fetched, members] = await Promise.all([historyP, membersP])
       const messages = [...fetched.values()]
         .sort((a, b) => a.createdTimestamp - b.createdTimestamp)
         .map((m) => this.messageToDict(m))
 
-      const guild = (channel as any).guild as Guild | undefined
-      const isDM = channel.type === ChannelType.DM
       const payload: HistoryPayload = {
         channelId: channel.id,
         messages,
@@ -547,8 +561,7 @@ export class BotManager extends EventEmitter {
         isDM
       }
       this.emit('history', payload)
-      if (guild) this.emit('members', await this.loadMembers(guild), guild.name)
-      else this.emit('members', [], '')
+      this.emit('members', members, guild?.name || '')
     } catch (err) {
       const msg = (err as Error)?.message || String(err)
       if (/missing access|permission/i.test(msg))
@@ -582,6 +595,10 @@ export class BotManager extends EventEmitter {
   }
 
   private async loadMembers(guild: Guild): Promise<MemberData[]> {
+    const cached = this.memberCache.get(guild.id)
+    if (cached && Date.now() - cached.ts < BotManager.MEMBER_CACHE_TTL) {
+      return cached.members
+    }
     try {
       if (this.hasMembers) await guild.members.fetch()
     } catch {
@@ -613,7 +630,9 @@ export class BotManager extends EventEmitter {
       })
     }
     out.sort((a, b) => b.rolePos - a.rolePos || a.name.toLowerCase().localeCompare(b.name.toLowerCase()))
-    return out.slice(0, 250)
+    const sliced = out.slice(0, 250)
+    this.memberCache.set(guild.id, { members: sliced, ts: Date.now() })
+    return sliced
   }
 
   private activeChannel(): TextBasedChannel | null {
@@ -1125,5 +1144,6 @@ export class BotManager extends EventEmitter {
       /* ignore */
     }
     this.client = null
+    this.memberCache.clear()
   }
 }

@@ -161,4 +161,33 @@ function MessageRow({ m, grouped, compact }: Props): JSX.Element {
   )
 }
 
-export default memo(MessageRow)
+export default memo(MessageRow, areEqual)
+
+/**
+ * Custom memo comparator. The main process rebuilds every message dict on
+ * each channel switch (fresh object references even for unchanged messages),
+ * which would defeat the default shallow compare and re-run formatContent
+ * for every row. Treat two messages as equal when their visible fields
+ * match, so re-entering a channel with overlapping history skips work.
+ * Edits/reactions arrive via onMessageUpdate and replace the message by id,
+ * so those updates still trigger a re-render (the field comparison changes).
+ */
+function areEqual(prev: Props, next: Props): boolean {
+  if (prev.grouped !== next.grouped || prev.compact !== next.compact) return false
+  const a = prev.m
+  const b = next.m
+  return (
+    a.id === b.id &&
+    a.content === b.content &&
+    a.editedTimestamp === b.editedTimestamp &&
+    a.author === b.author &&
+    a.avatarUrl === b.avatarUrl &&
+    a.roleColor === b.roleColor &&
+    a.mentionsMe === b.mentionsMe &&
+    a.images.length === b.images.length &&
+    a.files.length === b.files.length &&
+    a.reactions.length === b.reactions.length &&
+    a.reactions.every((r, i) => r.count === b.reactions[i].count && r.me === b.reactions[i].me) &&
+    a.images.every((u, i) => u === b.images[i])
+  )
+}
