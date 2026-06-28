@@ -17,15 +17,83 @@ import { ChannelType, type Client, type VoiceChannel } from 'discord.js'
 import { create as createYtDlp } from 'youtube-dl-exec'
 import type { Track } from '@shared/types'
 
-// ffmpeg-static gives prism-media a binary without a system install. yt-dlp
-// streams the source container to stdout and @discordjs/voice transcodes it to
-// opus through this ffmpeg.
+// Resolve a usable ffmpeg for prism-media (the transcoder @discordjs/voice
+// drives). prism's FFmpeg.getInfo() calls `require('ffmpeg-static')` and spawns
+// the path it returns, but in a packaged app that path points inside app.asar
+// — the binary is unpacked to app.asar.unpacked (see electron-builder.yml), so
+// the spawn fails with ENOENT and prism falls through to a system `ffmpeg`,
+// which is usually absent, yielding the cryptic "FFmpeg/avconv not found!".
+// We resolve the real (unpacked) binary ourselves and patch prism to use it,
+// mirroring how yt-dlp is resolved below.
+let ffmpegResolved = false
+function resolveFfmpeg(): string | null {
+  if (ffmpegResolved) return (globalThis as any).__botcordFfmpeg ?? null
+  ffmpegResolved = true
+  const candidates: string[] = []
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const ff = require('ffmpeg-static')
+    if (ff) candidates.push(typeof ff === 'string' ? ff : (ff as { path?: string }).path || '')
+  } catch {
+    /* not bundled */
+  }
+  // Last resort: a system install.
+  candidates.push('ffmpeg', 'avconv')
+
+  for (let c of candidates) {
+    if (!c) continue
+    // Rewrite app.asar -> app.asar.unpacked so we spawn the real binary off disk.
+    if (c.includes('app.asar') && !c.includes('app.asar.unpacked')) {
+      c = c.replace('app.asar', 'app.asar.unpacked')
+    }
+    const probe = spawnSync(c, ['-version'], { windowsHide: true })
+    if (probe.error || probe.status !== 0) continue
+    if (process.platform !== 'win32') {
+      try {
+        chmodSync(c, 0o755)
+      } catch {
+        /* read-only bundle; npm/electron-builder preserves the exec bit */
+      }
+    }
+    if (process.platform === 'darwin') {
+      try {
+        spawnSync('xattr', ['-d', 'com.apple.quarantine', c], { stdio: 'ignore' })
+      } catch {
+        /* not quarantined */
+      }
+    }
+    ;(globalThis as any).__botcordFfmpeg = c
+    return c
+  }
+  return null
+}
+
 try {
+  // Patch prism-media's FFmpeg module so its command lookup uses our resolved
+  // (unpacked, verified) binary instead of the broken asar path. prism caches
+  // the result on first use, so this must run before any playback.
   // eslint-disable-next-line @typescript-eslint/no-var-requires
-  const ff = require('ffmpeg-static')
-  if (ff) process.env.FFMPEG_PATH = ff
+  const prismFfmpeg = require('prism-media/src/core/FFmpeg')
+  const origGetInfo = prismFfmpeg.getInfo.bind(prismFfmpeg)
+  prismFfmpeg.getInfo = function (force = false) {
+    const resolved = resolveFfmpeg()
+    if (resolved) {
+      // Bypass prism's broken source list and hand it the verified command.
+      const result = spawnSync(resolved, ['-h'], { windowsHide: true })
+      if (!result.error) {
+        const cached = (prismFfmpeg as any)
+        cached.command = resolved
+        cached.output = Buffer.concat(result.output.filter(Boolean) as Buffer[]).toString()
+        return { command: resolved, output: cached.output, get version() {
+          return /version (.+) Copyright/mi.exec(cached.output)?.[1]
+        } }
+      }
+    }
+    // Fall back to prism's own search (system ffmpeg/avconv).
+    return origGetInfo(force)
+  }
 } catch {
-  /* optional */
+  /* prism layout changed; system ffmpeg still works via prism's own search */
 }
 
 interface QueueItem extends Track {
@@ -344,6 +412,18 @@ export class MusicManager extends EventEmitter {
     }
     if (!this.current) {
       this.resource = null
+      this.emit('nowPlaying', null)
+      this.emit('queue', this.snapshot())
+      return
+    }
+    // Fail fast with a clear message instead of letting prism throw an opaque
+    // "FFmpeg/avconv not found!" mid-playback.
+    if (!resolveFfmpeg()) {
+      this.emit(
+        'log',
+        "Can't play music: no ffmpeg found. The bundled ffmpeg is missing from this install; reinstall Botcord, or install ffmpeg system-wide and relaunch."
+      )
+      this.current = null
       this.emit('nowPlaying', null)
       this.emit('queue', this.snapshot())
       return
